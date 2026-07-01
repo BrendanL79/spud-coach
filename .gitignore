@@ -7,3 +7,6 @@ game_files/
 
 # Local Claude Code settings (personal, not shared)
 .claude/settings.local.json
+
+# Git worktrees for in-progress work
+.worktrees/
