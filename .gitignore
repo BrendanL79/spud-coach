@@ -10,3 +10,9 @@ game_files/
 
 # Git worktrees for in-progress work
 .worktrees/
+
+# Python artifacts
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
