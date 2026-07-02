@@ -62,3 +62,37 @@ def test_weapon_record_rd_absent_slope_zero():
     data = '[gd_resource type="Resource" format=2]\n[resource]\neffects = [  ]\n'
     rec = build_weapon_record(stats, data, weapon_id="w", name="W", tier=1)
     assert rec["dps_slope_per_rd"] == 0.0
+
+
+def test_weapon_record_populates_effects_and_classes():
+    effect = ('[gd_resource type="Resource" format=2]\n'
+              '[ext_resource path="res://effects/weapons/exploding_effect.gd" type="Script" id=1]\n'
+              '[resource]\nscript = ExtResource( 1 )\n'
+              'key = "effect_explode_custom"\nchance = 0.5\nvalue = 0\n')
+    rec = build_weapon_record(STATS, DATA, [effect], weapon_id="w", name="W",
+                              tier=1, classes=["Gun", "Explosive"])
+    assert rec["sets"] == ["Gun", "Explosive"]
+    assert len(rec["effects"]) == 1
+    e = rec["effects"][0]
+    assert e["key"] == "effect_explode_custom" and e["chance"] == 0.5
+    assert "__ext__" not in str(e)  # nested resource refs (script) dropped
+
+
+def test_resolve_weapon_refs_follows_effect_and_set_ext_resources(tmp_path):
+    from brotato_coach.builders import discover
+    wdir = tmp_path / "weapons" / "ranged" / "shredder" / "1"
+    wdir.mkdir(parents=True)
+    (wdir / "shredder_effect.tres").write_text(
+        '[gd_resource type="Resource" format=2]\n[resource]\n'
+        'key = "effect_explode_custom"\nchance = 0.5\n', encoding="utf-8")
+    data = wdir / "shredder_data.tres"
+    data.write_text(
+        '[gd_resource type="Resource" format=2]\n'
+        '[ext_resource path="res://weapons/ranged/shredder/1/shredder_effect.tres" type="Resource" id=6]\n'
+        '[ext_resource path="res://items/sets/gun/gun_set_data.tres" type="Resource" id=7]\n'
+        '[ext_resource path="res://items/sets/explosive/explosive_set_data.tres" type="Resource" id=8]\n'
+        '[resource]\neffects = [ ExtResource( 6 ) ]\n'
+        'sets = [ ExtResource( 7 ), ExtResource( 8 ) ]\n', encoding="utf-8")
+    effect_paths, classes = discover._resolve_weapon_refs(str(tmp_path), str(data))
+    assert classes == ["Gun", "Explosive"]
+    assert len(effect_paths) == 1 and effect_paths[0].endswith("shredder_effect.tres")

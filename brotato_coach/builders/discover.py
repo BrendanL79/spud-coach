@@ -3,6 +3,47 @@ from __future__ import annotations
 import glob
 import os
 
+from brotato_coach.tres import parse_tres
+
+
+def _res_url_to_path(extracted_root: str, res_url: str | None) -> str | None:
+    if res_url and res_url.startswith("res://"):
+        return os.path.join(extracted_root, res_url[len("res://"):])
+    return None
+
+
+def _resolve_weapon_refs(extracted_root: str, data_path: str) -> tuple[list[str], list[str]]:
+    """Follow a weapon data .tres's `effects` and `sets` ext_resource references.
+
+    Returns (effect_paths, class_names). The weapon's data .tres lists its effects
+    and set memberships as ExtResource(id) entries; the parser records each id's
+    file path in the ext_resource table. We resolve those the same way the item
+    and character builders already resolve their effect files.
+    """
+    with open(data_path, encoding="utf-8") as fh:
+        doc = parse_tres(fh.read())
+    ext, res = doc.ext_resources, doc.resource
+
+    def ref_ids(field: str) -> list[int]:
+        return [e["__ext__"] for e in (res.get(field) or [])
+                if isinstance(e, dict) and "__ext__" in e]
+
+    effect_paths: list[str] = []
+    for rid in ref_ids("effects"):
+        path = _res_url_to_path(extracted_root, (ext.get(rid) or {}).get("path"))
+        if path and os.path.isfile(path):
+            effect_paths.append(path)
+
+    classes: list[str] = []
+    for rid in ref_ids("sets"):
+        path = (ext.get(rid) or {}).get("path") or ""
+        if "/sets/" in path:
+            cls = path.split("/sets/", 1)[1].split("/", 1)[0]
+            name = cls.replace("_", " ").title()
+            if name not in classes:
+                classes.append(name)
+    return effect_paths, classes
+
 
 def find_weapon_dirs(extracted_root: str) -> list[dict]:
     results = []
@@ -19,12 +60,15 @@ def find_weapon_dirs(extracted_root: str) -> list[dict]:
             data = glob.glob(os.path.join(tier_dir, "*_data.tres"))
             if not stats or not data:
                 continue
+            effect_paths, classes = _resolve_weapon_refs(extracted_root, data[0])
             results.append({
                 "weapon_id": f"weapon_{weapon_folder}",
                 "name": weapon_folder.replace("_", " ").title(),
                 "tier": int(tier_name),
                 "stats_path": stats[0],
                 "data_path": data[0],
+                "effect_paths": effect_paths,
+                "classes": classes,
             })
     return results
 
