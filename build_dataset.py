@@ -38,7 +38,9 @@ def main(argv=None) -> int:
     for entry in discover.find_weapon_dirs(args.extracted):
         weapons.append(build_weapon_record(
             _read(entry["stats_path"]), _read(entry["data_path"]),
+            [_read(p) for p in entry.get("effect_paths", [])],
             weapon_id=entry["weapon_id"], name=entry["name"], tier=entry["tier"],
+            classes=entry.get("classes", []),
         ))
 
     items = []

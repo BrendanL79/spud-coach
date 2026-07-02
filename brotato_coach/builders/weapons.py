@@ -11,10 +11,23 @@ def _rd_coefficient(scaling_stats: list) -> float:
     return 0.0
 
 
-def build_weapon_record(stats_text: str, data_text: str, *, weapon_id: str,
-                        name: str, tier: int) -> dict:
+def _weapon_effect_record(text: str) -> dict:
+    """A weapon's on-hit effect as plain scalar fields.
+
+    Drops nested resource references (script, explosion_scene, …) and keeps the
+    gameplay scalars — e.g. the Shredder's `key="effect_explode_custom"` with
+    `chance=0.5`.
+    """
+    r = parse_tres(text).resource
+    return {k: v for k, v in r.items()
+            if not (isinstance(v, dict) and ("__ext__" in v or "__sub__" in v))}
+
+
+def build_weapon_record(stats_text: str, data_text: str,
+                        effect_texts: list[str] | None = None, *,
+                        weapon_id: str, name: str, tier: int,
+                        classes: list[str] | None = None) -> dict:
     s = parse_tres(stats_text).resource
-    d = parse_tres(data_text).resource
 
     cooldown = float(s.get("cooldown", 0))
     recoil_duration = float(s.get("recoil_duration", 0.0))
@@ -48,6 +61,11 @@ def build_weapon_record(stats_text: str, data_text: str, *, weapon_id: str,
         "cycle_time": ct,
         "dps_at_zero_rd": dps0,
         "dps_slope_per_rd": slope,
-        "sets": [],
-        "effects": d.get("effects", []) or [],
+        # Weapon-class set membership (e.g. ["Gun", "Explosive"]); resolved from
+        # the data .tres `sets` ext_resources by the discover step.
+        "sets": list(classes or []),
+        # On-hit effects (e.g. exploding projectile), resolved from the data
+        # .tres `effects` ext_resources. NOTE: these are surfaced for reasoning;
+        # the DPS math does not yet factor procs into dps_at_zero_rd/slope.
+        "effects": [_weapon_effect_record(t) for t in (effect_texts or [])],
     }

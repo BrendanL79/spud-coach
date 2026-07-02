@@ -84,7 +84,7 @@ All tools return a JSON object. Lookups that miss return `{"error": "not_found",
 
 | Tool | Arguments | Returns |
 |------|-----------|---------|
-| `get_weapon` | `name`, `tier?` | Weapon record incl. precomputed DPS line; `{matches:[...]}` if `tier` omitted and several tiers match |
+| `get_weapon` | `name`, `tier?` | Weapon record incl. precomputed DPS line, on-hit `effects`, and weapon-class `sets`; `{matches:[...]}` if `tier` omitted and several tiers match |
 | `get_item` | `name` | Item record: effects, tags, `archetype`, `frozen_stat` |
 | `get_character` | `name` | Character kit: `wanted_tags`, `banned_item_groups`, `flat_bonuses`, `gain_modifiers`, `special_effects` |
 | `get_weapon_class_set` | `class_name` | Weapon-**class** set bonuses (Blade, Gun, Elemental, …), by equipped count |
