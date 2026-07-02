@@ -23,7 +23,8 @@ def build_character_record(data_text: str, effect_texts: list[str], *, char_id: 
         elif key.startswith("stat_"):
             flat_bonuses.append({"stat": key, "value": r.get("value", 0)})
         else:
-            special_effects.append(key)
+            if not key.startswith("weapon_"):
+                special_effects.append(key)
 
     return {
         "id": char_id,

@@ -4,10 +4,14 @@ import difflib
 
 
 def _names(records: list[dict]) -> list[str]:
-    out = []
+    seen: set[str] = set()
+    out: list[str] = []
     for r in records:
-        out.extend([r.get("name", ""), r.get("id", "")])
-    return [n for n in out if n]
+        for v in (r.get("name", ""), r.get("id", "")):
+            if v and v not in seen:
+                seen.add(v)
+                out.append(v)
+    return out
 
 
 def _suggest(records: list[dict], name: str) -> list[str]:

@@ -75,7 +75,9 @@ def main(argv=None) -> int:
             print(f"  - {p}", file=sys.stderr)
         return 1
 
-    os.makedirs(os.path.dirname(args.out), exist_ok=True)
+    out_dir = os.path.dirname(args.out)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as fh:
         json.dump(ds, fh, indent=2)
     print(f"Wrote {args.out}: {len(weapons)} weapon records, {len(items)} item records, "

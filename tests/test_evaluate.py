@@ -44,3 +44,22 @@ def test_handcuffs_hp_cap_reason_mentions_frozen_stat():
     cap = next(e for e in result["effects"] if e["effect"]["key"] == "hp_cap")
     assert "stat_max_hp" in cap["reason"]
     assert "36" in cap["reason"]
+
+
+def test_rule5_default_live_for_uninvested_but_present_effect():
+    # a stat_ effect with value <= 0 (not wanted, not melee, not cap) falls through to live
+    ds = {
+        "items": [{"id": "item_x", "name": "X", "tags": [], "archetype": [],
+                   "frozen_stat": None,
+                   "effects": [{"key": "stat_armor", "value": 0, "effect_sign": 3, "text_key": ""}]}],
+        "characters": [{"id": "character_c", "name": "C", "wanted_tags": [],
+                        "banned_item_groups": [], "special_effects": []}],
+    }
+    r = evaluate_item_for_build(ds, "X", "C", {})
+    assert r["effects"][0]["verdict"] == "live"
+
+
+def test_missing_item_returns_error():
+    ds = {"items": [], "characters": [{"id": "character_c", "name": "C"}]}
+    r = evaluate_item_for_build(ds, "Nope", "C", {})
+    assert r["error"] == "not_found"

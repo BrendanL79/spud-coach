@@ -41,7 +41,9 @@ def build_item_record(data_text: str, effect_texts: list[str], *, item_id: str,
         if is_cap:
             if "cap_at_current_value" not in archetype:
                 archetype.append("cap_at_current_value")
-            frozen_stat = _CAP_STAT_MAP.get(key, frozen_stat)
+            mapped = _CAP_STAT_MAP.get(key)
+            if mapped is not None:
+                frozen_stat = mapped
         if key.startswith("stat_") and key not in scaling_stats:
             scaling_stats.append(key)
 

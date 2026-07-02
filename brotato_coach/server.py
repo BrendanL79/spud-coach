@@ -79,9 +79,11 @@ def build_server(ds: dict) -> FastMCP:
 
     @mcp.tool()
     def check_dataset_version() -> dict[str, Any]:
-        return {"game_version": ds.get("game_version"),
-                "generated_at": ds.get("generated_at"),
-                "schema_version": ds.get("schema_version")}
+        return _safe(lambda: {
+            "game_version": ds.get("game_version"),
+            "generated_at": ds.get("generated_at"),
+            "schema_version": ds.get("schema_version"),
+        })()
 
     return mcp
 

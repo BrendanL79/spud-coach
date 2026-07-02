@@ -32,3 +32,14 @@ def test_set_bonuses_sorted_by_count():
     rec = build_set_record(set_data, {6: eff6, 2: eff2}, set_id="set_gun", name="Gun")
     assert [b["count"] for b in rec["bonuses"]] == [2, 6]
     assert rec["bonuses"][1]["effect"] == {"key": "stat_range", "value": 50}
+
+
+def test_starting_weapon_grant_excluded_from_special_effects():
+    from brotato_coach.builders.characters import build_character_record
+    data = '[gd_resource type="Resource" format=2]\n[resource]\ntier = 0\n'
+    weapon_grant = '[resource]\nkey = "weapon_pistol_1"\nvalue = 1\n'
+    no_melee = '[resource]\nkey = "no_melee_weapons"\nvalue = 1\n'
+    rec = build_character_record(data, [weapon_grant, no_melee], char_id="c", name="C",
+                                 wanted_tags=[], banned_item_groups=[])
+    assert "no_melee_weapons" in rec["special_effects"]
+    assert "weapon_pistol_1" not in rec["special_effects"]
