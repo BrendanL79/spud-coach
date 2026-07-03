@@ -28,7 +28,7 @@ This checkout (and any machine without the game) has **no** `extracted/`, `recov
 
 ---
 
-# Phase A — features over existing data (runs anywhere)
+## Phase A — features over existing data (runs anywhere)
 
 ### Task 1: `calc.proc_line` — expected proc DPS as a line
 
@@ -1188,7 +1188,7 @@ git commit -m "feat(ship): spudcoach entry point + --data/SPUDCOACH_DATA dataset
 
 ---
 
-# Phase B — evidence tasks (require a machine with `extracted/` + `recovered/`)
+## Phase B — evidence tasks (require a machine with `extracted/` + `recovered/`)
 
 Prerequisite for all three tasks: regenerate the trees per `docs/extraction-setup.md` (`unpack_pck.py` on `game_files/Brotato.pck`, gdre_tools for `recovered/`). None of these directories may ever be committed.
 
@@ -1374,7 +1374,7 @@ git commit -m "feat(l10n): confirm translation key scheme against real extractio
 
 ---
 
-# Phase C — publish checklist (every step needs explicit user go-ahead)
+## Phase C — publish checklist (every step needs explicit user go-ahead)
 
 These are outward-facing, mostly one-time manual actions — not TDD tasks. Do **not** run any of them without the user's confirmation.
 
@@ -1392,7 +1392,7 @@ uv publish        # uploads; needs the credentials above
 
 ---
 
-# Deferred to a separate plan: bestiary (enemy data)
+## Deferred to a separate plan: bestiary (enemy data)
 
 Deliberately not planned here (per plan-scoping rules — it's an independent subsystem and its data schema is unverified). The roadmap's `entities/units/enemies/` path is an assumption not confirmed by `docs/extraction-setup.md`. Before writing that plan, run this survey on the extraction machine and paste the results into the new plan's spec:
 

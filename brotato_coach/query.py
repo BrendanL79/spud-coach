@@ -14,7 +14,11 @@ def _names(records: list[dict]) -> list[str]:
     return out
 
 
-def _suggest(records: list[dict], name: str) -> list[str]:
+def suggest(records: list[dict], name: str) -> list[str]:
+    """Close-match name suggestions (case-insensitive, display_name-aware).
+
+    Public: the answer layer uses this for did_you_mean on its own error paths.
+    """
     names = _names(records)
     names_lower = [n.lower() for n in names]
     name_to_original = {n.lower(): n for n in names}
@@ -37,7 +41,7 @@ def get_weapon(ds: dict, name: str, tier: int | None = None) -> dict:
     if tier is not None:
         matches = [m for m in matches if m.get("tier") == tier]
     if not matches:
-        return {"error": "not_found", "did_you_mean": _suggest(ds["weapons"], name)}
+        return {"error": "not_found", "did_you_mean": suggest(ds["weapons"], name)}
     if len(matches) == 1:
         return matches[0]
     return {"matches": matches}
@@ -46,7 +50,7 @@ def get_weapon(ds: dict, name: str, tier: int | None = None) -> dict:
 def _get_one(records: list[dict], name: str) -> dict:
     matches = _match(records, name)
     if not matches:
-        return {"error": "not_found", "did_you_mean": _suggest(records, name)}
+        return {"error": "not_found", "did_you_mean": suggest(records, name)}
     return matches[0]
 
 

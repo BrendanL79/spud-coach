@@ -40,7 +40,8 @@ def compare_weapons(ds: dict, names_with_tiers: list, stats: dict,
         r = weapon_dps(ds, name, tier, stats, aoe_enemies_hit)
         if "dps" in r:
             rows.append({"name": r["name"], "tier": tier, "dps": r["dps"],
-                         "proc_dps": r["proc_dps"]})
+                         "base_dps": r["base_dps"], "proc_dps": r["proc_dps"],
+                         "unmodeled_effects": r["unmodeled_effects"]})
     rows.sort(key=lambda x: x["dps"], reverse=True)
     return {"ranking": rows}
 
@@ -60,7 +61,7 @@ def compare_merge_paths(ds: dict, weapon_name: str, path_a: list, path_b: list,
     line_a, line_b = path_line(path_a), path_line(path_b)
     if line_a is None or line_b is None:
         return {"error": "not_found",
-                "did_you_mean": query._suggest(ds["weapons"], weapon_name)}
+                "did_you_mean": query.suggest(ds["weapons"], weapon_name)}
 
     result = calc.compare_lines(line_a, line_b, rd_range[0], rd_range[1])
     return {

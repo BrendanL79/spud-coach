@@ -26,6 +26,8 @@ def parse_translations_csv(text: str, locale: str = "en") -> dict[str, str]:
 
 
 def resolve_text(tr: dict[str, str] | None, key: object, fallback: str = "") -> str:
-    if tr and isinstance(key, str) and key in tr:
+    # An empty translation value (partially-localized CSV column) counts as
+    # unresolved — fall back rather than surface a blank display_name.
+    if tr and isinstance(key, str) and tr.get(key):
         return tr[key]
     return fallback

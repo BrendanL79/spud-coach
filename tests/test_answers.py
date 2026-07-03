@@ -43,6 +43,17 @@ def test_compare_weapons_minigun_beats_revolver_at_rd10():
     assert result["ranking"][0]["name"] == "Minigun"
 
 
+def test_compare_weapons_rows_carry_dps_breakdown():
+    result = answers.compare_weapons(
+        DS, [("Shredder", 4), ("Minigun", 4)], {"ranged_damage": 10})
+    rows = {r["name"]: r for r in result["ranking"]}
+    # base 23.8095 + 0.47619*10 = 28.5714; proc 11.9048 + 0.238095*10 = 14.2857
+    assert math.isclose(rows["Shredder"]["base_dps"], 28.5714, rel_tol=1e-4)
+    assert math.isclose(rows["Shredder"]["proc_dps"], 14.2857, rel_tol=1e-4)
+    assert rows["Shredder"]["unmodeled_effects"] == []
+    assert rows["Minigun"]["proc_dps"] == 0.0
+
+
 def test_compare_merge_paths_crossover_reported():
     # path_a = II+II (two tier-2), path_b = III+I (tier-3 + tier-1)
     result = answers.compare_merge_paths(DS, "Laser", [2, 2], [3, 1])

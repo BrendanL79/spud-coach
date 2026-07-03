@@ -45,7 +45,9 @@ uv run pytest        # 89 tests (88 passed + 1 skipped without a built dataset)
 
 ## Run
 
-    uvx spudcoach --data /path/to/brotato.json
+```bash
+uvx spudcoach --data /path/to/brotato.json
+```
 
 The dataset is never distributed — build your own from your Brotato install:
 `uv run python build_dataset.py --game-version <ver> --generated-at <iso8601>`

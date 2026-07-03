@@ -29,3 +29,8 @@ def test_resolve_text_falls_back():
     assert resolve_text(tr, "MISSING_KEY", "slug") == "slug"
     assert resolve_text(None, "WEAPON_SHREDDER", "slug") == "slug"
     assert resolve_text(tr, None) == ""
+
+
+def test_resolve_text_falls_back_on_empty_translation_value():
+    # A key that exists but is empty for the locale is unresolved, not blank.
+    assert resolve_text({"WEAPON_SHREDDER": ""}, "WEAPON_SHREDDER", "slug") == "slug"
