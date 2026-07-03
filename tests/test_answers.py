@@ -95,6 +95,15 @@ def test_compare_merge_paths_includes_proc_lines():
     assert math.isclose(result["line_b"][1], 3.7)
 
 
+def test_compare_merge_paths_not_found_suggests_display_name():
+    ds = {"weapons": [{"id": "weapon_laser", "name": "Laser",
+                       "display_name": "Laser Blaster", "tier": 1,
+                       "dps_at_zero_rd": 15.0, "dps_slope_per_rd": 0.9}]}
+    result = answers.compare_merge_paths(ds, "laser blaster X", [1], [1])
+    assert result["error"] == "not_found"
+    assert "Laser Blaster" in result["did_you_mean"]
+
+
 SETS_DS = {
     "weapons": [
         {"id": "weapon_smg", "name": "SMG", "tier": 1, "sets": ["Gun"]},

@@ -97,7 +97,8 @@ def build_server(ds: dict) -> FastMCP:
         """Compute one weapon's realized DPS for a given build, with a breakdown.
 
         `dps` = guaranteed line (`base_dps`) + expected on-hit proc damage
-        (`proc_dps`, e.g. exploding projectiles — chance x effect damage).
+        (`proc_dps`, e.g. exploding projectiles — chance x the weapon's own
+        damage line).
         `aoe_enemies_hit` scales the proc term for AoE procs (default 1 enemy,
         conservative). Effect keys the model can't yet value are listed in
         `unmodeled_effects` — mention them when the number matters. `stats` is
@@ -135,7 +136,9 @@ def build_server(ds: dict) -> FastMCP:
         Answers the Brotato 'which merge order is better' question. `path_a` and
         `path_b` are lists of tiers (ints), e.g. [1, 1, 2] vs [1, 2, 2]. Returns
         the winner if one path dominates at all RD, or the crossover ranged-damage
-        value where the better path flips.
+        value where the better path flips. Path lines include expected proc DPS
+        (at the default single-enemy AoE assumption; aoe_enemies_hit is not
+        tunable here).
         """
         return _safe(answers.compare_merge_paths)(
             ds=ds, weapon_name=weapon_name, path_a=path_a, path_b=path_b)

@@ -40,7 +40,7 @@ The server refuses to start without `data/brotato.json` and tells you to build i
 Run the tests (the dataset-dependent integration test is skipped when no dataset is built):
 
 ```bash
-uv run pytest        # 53 tests (52 passed + 1 skipped without a built dataset)
+uv run pytest        # 89 tests (88 passed + 1 skipped without a built dataset)
 ```
 
 ## Run
@@ -49,7 +49,7 @@ uv run pytest        # 53 tests (52 passed + 1 skipped without a built dataset)
 
 The dataset is never distributed — build your own from your Brotato install:
 `uv run python build_dataset.py --game-version <ver> --generated-at <iso8601>`
-(see docs/extraction-setup.md). `SPUDCOACH_DATA` works as an env-var alternative
+(see [docs/extraction-setup.md](docs/extraction-setup.md)). `SPUDCOACH_DATA` works as an env-var alternative
 to `--data`.
 
 ## Use as a Claude Code plugin

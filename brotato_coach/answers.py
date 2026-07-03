@@ -60,8 +60,7 @@ def compare_merge_paths(ds: dict, weapon_name: str, path_a: list, path_b: list,
     line_a, line_b = path_line(path_a), path_line(path_b)
     if line_a is None or line_b is None:
         return {"error": "not_found",
-                "did_you_mean": difflib.get_close_matches(
-                    weapon_name, [w["name"] for w in ds["weapons"]], n=3, cutoff=0.5)}
+                "did_you_mean": query._suggest(ds["weapons"], weapon_name)}
 
     result = calc.compare_lines(line_a, line_b, rd_range[0], rd_range[1])
     return {
