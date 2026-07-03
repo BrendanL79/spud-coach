@@ -1194,6 +1194,7 @@ Prerequisite for all three tasks: regenerate the trees per `docs/extraction-setu
 
 Carried from the Phase A final review, to decide with evidence in hand:
 - Task 12: when adding the first PROC_MODELS entry, decide whether a modeled effect with a missing `chance` field should error rather than default to 1.0 (a silent 100%-proc claim).
+- Task 12: extract the proc-aggregation loop from `build_weapon_record` into `procs.aggregate_proc_dps(effects, dps0, slope, models)` when adding the second `damage_source` branch (CodeRabbit suggestion on PR #3, deferred — pure churn until the loop grows).
 - Task 14: decide whether answer payloads should surface `display_name` alongside slug `name`, and whether to bump `schema_version` for the proc-aware/localized dataset.
 
 ### Task 12: verify the explode proc and add the first `PROC_MODELS` entry
