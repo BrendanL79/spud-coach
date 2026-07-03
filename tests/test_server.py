@@ -90,3 +90,17 @@ def test_weapon_dps_tool_reports_proc_fields():
                                tier=4, stats={"ranged_damage": 10}))
     assert round(result["proc_dps"], 4) == 10.0
     assert result["unmodeled_effects"] == ["effect_burning"]
+
+
+def test_loadout_set_bonuses_tool():
+    ds = {**DS,
+          "weapons": [{"id": "weapon_smg", "name": "SMG", "tier": 1,
+                       "sets": ["Gun"], "dps_at_zero_rd": 0.0,
+                       "dps_slope_per_rd": 0.0, "scaling_stats": []}],
+          "sets": [{"id": "set_gun", "name": "Gun", "bonuses": [
+              {"count": 2, "effect": {"key": "stat_range", "value": 10}}]}]}
+    result = asyncio.run(_call(build_server(ds), "loadout_set_bonuses",
+                               weapon_names=["SMG", "SMG"]))
+    assert result["classes"][0]["class"] == "Gun"
+    assert result["classes"][0]["count"] == 2
+    assert result["classes"][0]["active"][0]["effect"]["value"] == 10

@@ -56,6 +56,21 @@ def build_server(ds: dict) -> FastMCP:
         return _safe(query.get_set)(ds=ds, class_name=class_name)
 
     @mcp.tool()
+    def loadout_set_bonuses(weapon_names: list[str]) -> dict[str, Any]:
+        """Report weapon-class set progress for a whole loadout: per class, how
+        many equipped weapons count toward it, which set bonuses are ACTIVE
+        now, and the NEXT threshold with how many more weapons it needs.
+
+        `weapon_names` is the loadout as weapon names; tiers don't matter for
+        class membership and duplicates count (six SMGs = six Gun weapons).
+        Use when the player asks 'what set bonuses do I have / what should I
+        add to hit the next bonus'. Unknown names come back under
+        `unknown_weapons` with did_you_mean suggestions. For one class's full
+        bonus table, use get_weapon_class_set instead.
+        """
+        return _safe(answers.loadout_set_bonuses)(ds=ds, weapon_names=weapon_names)
+
+    @mcp.tool()
     def list_weapons(scaling_stat: str | None = None, tier: int | None = None) -> dict[str, Any]:
         """List weapon summaries (id, name, tier), optionally filtered by
         `scaling_stat` (a stat the weapon scales with) and/or `tier` (1-6).

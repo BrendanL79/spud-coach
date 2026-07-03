@@ -88,6 +88,7 @@ All tools return a JSON object. Lookups that miss return `{"error": "not_found",
 | `get_item` | `name` | Item record: effects, tags, `archetype`, `frozen_stat` |
 | `get_character` | `name` | Character kit: `wanted_tags`, `banned_item_groups`, `flat_bonuses`, `gain_modifiers`, `special_effects` |
 | `get_weapon_class_set` | `class_name` | Weapon-**class** set bonuses (Blade, Gun, Elemental, …), by equipped count |
+| `loadout_set_bonuses` | `weapon_names` | Per-class set progress across a whole loadout: equipped count, active bonuses, and next threshold |
 | `list_weapons` | `scaling_stat?`, `tier?` | `{weapons:[...]}` filtered summaries |
 | `list_items` | `tag?`, `scaling_stat?`, `archetype?`, `tier?` | `{items:[...]}` filtered summaries |
 | `get_filter_options` | — | Valid filter values in the dataset: item tags, archetypes, scaling stats, tiers, and weapon-class names |
@@ -129,7 +130,7 @@ extracted/  (gitignored, regenerable)          raw .tres game data
 data/brotato.json  (gitignored, built locally)  the deterministic core artifact
      │
      ▼   loaded at startup
-brotato_coach.server (FastMCP)                  14 tools over the pure functions
+brotato_coach.server (FastMCP)                  15 tools over the pure functions
      │
      ▼   connected as a plugin
 Claude Code / Desktop / Web                     chat frontend
