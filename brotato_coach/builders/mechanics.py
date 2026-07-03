@@ -104,10 +104,11 @@ STAT_MECHANICS: dict[str, dict] = {
                 "cap list — uncapped."),
     "stat_range": _m(
         summary="Added flat to weapon max_range. Ranged weapons get the "
-                "full stat; melee weapons get only half (stat/2) — both are "
-                "floored at that weapon's own min_range, so it can shrink an "
-                "increase's effect but never push range below the weapon's "
-                "floor (weapon_service.gd init_base_stats, ranged base "
-                "42/78, melee base 29/66). Not in utils.gd's cap list — "
-                "uncapped."),
+                "full stat (weapon_service.gd::init_ranged_stats:42 / "
+                "init_ranged_pet_stats:78); melee weapons get only half "
+                "(stat/2, weapon_service.gd::init_melee_stats:29 / "
+                "init_melee_pet_stats:66) — both are floored at that "
+                "weapon's own min_range, so it can shrink an increase's "
+                "effect but never push range below the weapon's floor. Not "
+                "in utils.gd's cap list — uncapped."),
 }
