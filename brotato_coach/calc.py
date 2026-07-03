@@ -33,6 +33,18 @@ def sum_lines(lines: list[tuple[float, float]]) -> tuple[float, float]:
     return (sum(d for d, _ in lines), sum(s for _, s in lines))
 
 
+def proc_line(dps0: float, slope: float, chance: float, enemies_hit: float,
+              multiplier: float = 1.0) -> tuple[float, float]:
+    """Expected DPS line added by a weapon-damage proc (e.g. exploding shot).
+
+    The proc re-deals the weapon's own damage line with probability `chance`
+    per hit, against `enemies_hit` enemies, scaled by `multiplier`. Expected
+    value is linear in RD, so the contribution is itself a (dps0, slope) line.
+    """
+    f = chance * enemies_hit * multiplier
+    return (dps0 * f, slope * f)
+
+
 def compare_lines(line_a: tuple[float, float], line_b: tuple[float, float],
                   rd_min: float = 0.0, rd_max: float = 100.0) -> dict:
     a0, as_ = line_a

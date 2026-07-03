@@ -80,3 +80,44 @@ def test_typed_stats_param_accepts_plain_dict():
     result = asyncio.run(_call(build_server(DS), "compare_weapons",
                                names_with_tiers=[["Minigun", 4]], stats={"ranged_damage": 10}))
     assert result["ranking"][0]["name"] == "Minigun"
+
+
+def test_weapon_dps_tool_reports_proc_fields():
+    ds = {**DS, "weapons": [{**DS["weapons"][0],
+          "proc_dps_at_zero_rd": 5.0, "proc_dps_slope_per_rd": 0.5,
+          "unmodeled_effects": ["effect_burning"]}]}
+    result = asyncio.run(_call(build_server(ds), "weapon_dps", name="Minigun",
+                               tier=4, stats={"ranged_damage": 10}))
+    assert round(result["proc_dps"], 4) == 10.0
+    assert result["unmodeled_effects"] == ["effect_burning"]
+
+
+def test_loadout_set_bonuses_tool():
+    ds = {**DS,
+          "weapons": [{"id": "weapon_smg", "name": "SMG", "tier": 1,
+                       "sets": ["Gun"], "dps_at_zero_rd": 0.0,
+                       "dps_slope_per_rd": 0.0, "scaling_stats": []}],
+          "sets": [{"id": "set_gun", "name": "Gun", "bonuses": [
+              {"count": 2, "effect": {"key": "stat_range", "value": 10}}]}]}
+    result = asyncio.run(_call(build_server(ds), "loadout_set_bonuses",
+                               weapon_names=["SMG", "SMG"]))
+    assert result["classes"][0]["class"] == "Gun"
+    assert result["classes"][0]["count"] == 2
+    assert result["classes"][0]["active"][0]["effect"]["value"] == 10
+
+
+def test_data_path_default():
+    from brotato_coach import server
+    assert server._data_path([]) == "data/brotato.json"
+
+
+def test_data_path_flag_overrides():
+    from brotato_coach import server
+    assert server._data_path(["--data", "/x/y.json"]) == "/x/y.json"
+
+
+def test_data_path_env_fallback(monkeypatch):
+    from brotato_coach import server
+    monkeypatch.setenv("SPUDCOACH_DATA", "/env/brotato.json")
+    assert server._data_path([]) == "/env/brotato.json"
+    assert server._data_path(["--data", "/flag.json"]) == "/flag.json"

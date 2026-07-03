@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import argparse
+import os
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -56,6 +58,21 @@ def build_server(ds: dict) -> FastMCP:
         return _safe(query.get_set)(ds=ds, class_name=class_name)
 
     @mcp.tool()
+    def loadout_set_bonuses(weapon_names: list[str]) -> dict[str, Any]:
+        """Report weapon-class set progress for a whole loadout: per class, how
+        many equipped weapons count toward it, which set bonuses are ACTIVE
+        now, and the NEXT threshold with how many more weapons it needs.
+
+        `weapon_names` is the loadout as weapon names; tiers don't matter for
+        class membership and duplicates count (six SMGs = six Gun weapons).
+        Use when the player asks 'what set bonuses do I have / what should I
+        add to hit the next bonus'. Unknown names come back under
+        `unknown_weapons` with did_you_mean suggestions. For one class's full
+        bonus table, use get_weapon_class_set instead.
+        """
+        return _safe(answers.loadout_set_bonuses)(ds=ds, weapon_names=weapon_names)
+
+    @mcp.tool()
     def list_weapons(scaling_stat: str | None = None, tier: int | None = None) -> dict[str, Any]:
         """List weapon summaries (id, name, tier), optionally filtered by
         `scaling_stat` (a stat the weapon scales with) and/or `tier` (1-6).
@@ -75,27 +92,40 @@ def build_server(ds: dict) -> FastMCP:
             tag=tag, scaling_stat=scaling_stat, archetype=archetype, tier=tier)
 
     @mcp.tool()
-    def weapon_dps(name: str, tier: int, stats: Stats) -> dict[str, Any]:
+    def weapon_dps(name: str, tier: int, stats: Stats,
+                   aoe_enemies_hit: float = 1.0) -> dict[str, Any]:
         """Compute one weapon's realized DPS for a given build, with a breakdown.
 
-        `stats` is the player's current run stats (short stat names, e.g.
-        ranged_damage); DPS scales linearly with ranged_damage. Use for 'how much
-        DPS does weapon X do at my build'. For ranking several weapons, use
+        `dps` = guaranteed line (`base_dps`) + expected on-hit proc damage
+        (`proc_dps`, e.g. exploding projectiles — chance x the weapon's own
+        damage line).
+        `aoe_enemies_hit` scales the proc term for AoE procs (default 1 enemy,
+        conservative). Effect keys the model can't yet value are listed in
+        `unmodeled_effects` — mention them when the number matters. `stats` is
+        the player's current run stats (short names, e.g. ranged_damage); DPS
+        scales linearly with ranged_damage. For ranking several weapons, use
         compare_weapons; for merge-order questions, use compare_merge_paths.
         """
-        return _safe(answers.weapon_dps)(ds=ds, name=name, tier=tier, stats=stats.as_dict())
+        return _safe(answers.weapon_dps)(ds=ds, name=name, tier=tier,
+                                         stats=stats.as_dict(),
+                                         aoe_enemies_hit=aoe_enemies_hit)
 
     @mcp.tool()
-    def compare_weapons(names_with_tiers: list[tuple[str, int]], stats: Stats) -> dict[str, Any]:
-        """Rank several weapons by realized DPS at the SAME build stats.
+    def compare_weapons(names_with_tiers: list[tuple[str, int]], stats: Stats,
+                        aoe_enemies_hit: float = 1.0) -> dict[str, Any]:
+        """Rank several weapons by realized DPS (guaranteed + expected proc
+        damage) at the SAME build stats.
 
         `names_with_tiers` is a list of [name, tier] pairs, e.g.
-        [["Minigun", 4], ["SMG", 6]]. Returns `{"ranking": [...]}` sorted by DPS
+        [["Minigun", 4], ["SMG", 6]]. `aoe_enemies_hit` scales proc terms for
+        AoE procs (default 1). Returns `{"ranking": [...]}` sorted by total DPS
         descending. Use when the player asks 'which of these hits hardest'.
         """
         return _safe(lambda **kw: answers.compare_weapons(
-            ds, [tuple(x) for x in kw["names_with_tiers"]], kw["stats"]))(
-            names_with_tiers=names_with_tiers, stats=stats.as_dict())
+            ds, [tuple(x) for x in kw["names_with_tiers"]], kw["stats"],
+            kw["aoe_enemies_hit"]))(
+            names_with_tiers=names_with_tiers, stats=stats.as_dict(),
+            aoe_enemies_hit=aoe_enemies_hit)
 
     @mcp.tool()
     def compare_merge_paths(weapon_name: str, path_a: list[int],
@@ -106,7 +136,9 @@ def build_server(ds: dict) -> FastMCP:
         Answers the Brotato 'which merge order is better' question. `path_a` and
         `path_b` are lists of tiers (ints), e.g. [1, 1, 2] vs [1, 2, 2]. Returns
         the winner if one path dominates at all RD, or the crossover ranged-damage
-        value where the better path flips.
+        value where the better path flips. Path lines include expected proc DPS
+        (at the default single-enemy AoE assumption; aoe_enemies_hit is not
+        tunable here).
         """
         return _safe(answers.compare_merge_paths)(
             ds=ds, weapon_name=weapon_name, path_a=path_a, path_b=path_b)
@@ -192,8 +224,17 @@ def build_server(ds: dict) -> FastMCP:
     return mcp
 
 
+def _data_path(argv: list[str] | None = None) -> str:
+    parser = argparse.ArgumentParser(prog="spudcoach")
+    parser.add_argument(
+        "--data", default=os.environ.get("SPUDCOACH_DATA", "data/brotato.json"),
+        help="path to brotato.json built by build_dataset.py "
+             "(also settable via SPUDCOACH_DATA)")
+    return parser.parse_args(argv).data
+
+
 def main() -> None:
-    ds = dataset.load_dataset("data/brotato.json")
+    ds = dataset.load_dataset(_data_path())
     build_server(ds).run()
 
 

@@ -41,3 +41,22 @@ def test_list_weapons_by_scaling_stat():
 def test_list_items_by_archetype():
     result = query.list_items(DS, archetype="cap_at_current_value")
     assert [i["name"] for i in result] == ["Handcuffs"]
+
+
+def test_get_weapon_matches_display_name():
+    ds = {"weapons": [{"id": "weapon_smg", "name": "Smg",
+                       "display_name": "SMG Mk. II", "tier": 1}]}
+    assert query.get_weapon(ds, "smg mk. ii")["id"] == "weapon_smg"
+
+
+def test_suggestions_include_display_names():
+    ds = {"weapons": [{"id": "weapon_smg", "name": "Smg",
+                       "display_name": "SMG Mk. II", "tier": 1}]}
+    rec = query.get_weapon(ds, "smg mk 2")
+    assert rec["error"] == "not_found"
+    assert "SMG Mk. II" in rec["did_you_mean"]
+
+
+def test_empty_query_is_not_found():
+    rec = query.get_weapon(DS, "")
+    assert rec["error"] == "not_found"

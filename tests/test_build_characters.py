@@ -43,3 +43,27 @@ def test_starting_weapon_grant_excluded_from_special_effects():
                                  wanted_tags=[], banned_item_groups=[])
     assert "no_melee_weapons" in rec["special_effects"]
     assert "weapon_pistol_1" not in rec["special_effects"]
+
+
+def test_character_record_falls_back_to_slug_name_without_translations():
+    data = '[gd_resource type="Resource" format=2]\n[resource]\ntier = 0\nname = "CHAR_X"\n'
+    rec = build_character_record(data, [], char_id="character_x", name="X",
+                                 wanted_tags=[], banned_item_groups=[])
+    assert rec["display_name"] == "X"
+    assert rec["description"] == ""
+
+
+def test_character_record_resolves_display_name_with_translations():
+    data = '[gd_resource type="Resource" format=2]\n[resource]\ntier = 0\nname = "CHAR_X"\n'
+    rec = build_character_record(data, [], char_id="character_x", name="X",
+                                 wanted_tags=[], banned_item_groups=[],
+                                 tr={"CHAR_X": "X (EN)"})
+    assert rec["display_name"] == "X (EN)"
+
+
+def test_set_record_falls_back_to_slug_name_without_translations():
+    set_data = '[gd_resource type="Resource" format=2]\n[resource]\nname = "SET_GUN"\n'
+    eff2 = '[resource]\nkey = "stat_range"\nvalue = 5\n'
+    rec = build_set_record(set_data, {2: eff2}, set_id="set_gun", name="Gun")
+    assert rec["display_name"] == "Gun"
+    assert rec["description"] == ""

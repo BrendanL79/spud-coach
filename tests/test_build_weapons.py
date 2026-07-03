@@ -96,3 +96,62 @@ def test_resolve_weapon_refs_follows_effect_and_set_ext_resources(tmp_path):
     effect_paths, classes = discover._resolve_weapon_refs(str(tmp_path), str(data))
     assert classes == ["Gun", "Explosive"]
     assert len(effect_paths) == 1 and effect_paths[0].endswith("shredder_effect.tres")
+
+
+EXPLODE_EFFECT = ('[gd_resource type="Resource" format=2]\n[resource]\n'
+                  'key = "effect_explode_custom"\nchance = 0.5\nvalue = 0\n')
+
+PROC_MODEL = {"effect_explode_custom": {
+    "damage_source": "weapon_damage",
+    "damage_multiplier": 1.0,
+    "default_enemies_hit": 1.0,
+}}
+
+
+def test_weapon_record_proc_line_from_model():
+    rec = build_weapon_record(STATS, DATA, [EXPLODE_EFFECT], weapon_id="w",
+                              name="W", tier=4, proc_models=PROC_MODEL)
+    # base line (23.8095, 0.47619) x chance 0.5
+    assert math.isclose(rec["proc_dps_at_zero_rd"], 11.90475, rel_tol=1e-4)
+    assert math.isclose(rec["proc_dps_slope_per_rd"], 0.238095, rel_tol=1e-4)
+    assert rec["unmodeled_effects"] == []
+
+
+def test_weapon_record_unmodeled_effect_contributes_zero_and_is_listed():
+    # default PROC_MODELS ships empty until verified against recovered/ code
+    rec = build_weapon_record(STATS, DATA, [EXPLODE_EFFECT], weapon_id="w",
+                              name="W", tier=4)
+    assert rec["proc_dps_at_zero_rd"] == 0.0
+    assert rec["proc_dps_slope_per_rd"] == 0.0
+    assert rec["unmodeled_effects"] == ["effect_explode_custom"]
+
+
+def test_weapon_record_no_effects_has_zero_proc_fields():
+    rec = build_weapon_record(STATS, DATA, weapon_id="w", name="W", tier=4)
+    assert rec["proc_dps_at_zero_rd"] == 0.0
+    assert rec["unmodeled_effects"] == []
+
+
+DATA_LOC = """[gd_resource type="Resource" format=2]
+[resource]
+weapon_id = "weapon_shredder"
+name = "WEAPON_SHREDDER"
+description = "WEAPON_SHREDDER_DESC"
+effects = [  ]
+"""
+TR = {"WEAPON_SHREDDER": "Shredder (EN)",
+      "WEAPON_SHREDDER_DESC": "Chance to explode."}
+
+
+def test_weapon_record_resolves_display_name_and_description():
+    rec = build_weapon_record(STATS, DATA_LOC, weapon_id="weapon_shredder",
+                              name="Shredder", tier=4, tr=TR)
+    assert rec["display_name"] == "Shredder (EN)"
+    assert rec["description"] == "Chance to explode."
+
+
+def test_weapon_record_falls_back_to_slug_name_without_translations():
+    rec = build_weapon_record(STATS, DATA_LOC, weapon_id="weapon_shredder",
+                              name="Shredder", tier=4)
+    assert rec["display_name"] == "Shredder"
+    assert rec["description"] == ""

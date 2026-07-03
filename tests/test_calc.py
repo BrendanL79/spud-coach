@@ -51,3 +51,16 @@ def test_compare_lines_dominant():
     assert result["rd_independent"] is True
     assert result["crossover_rd"] is None
     assert result["winner"] == "a"
+
+
+def test_proc_line_shredder_explode():
+    # Shredder T4 base line (23.8095, 0.47619); 50% chance to re-deal weapon damage
+    p0, ps = calc.proc_line(23.8095, 0.47619, chance=0.5, enemies_hit=1.0)
+    assert math.isclose(p0, 11.90475, rel_tol=1e-4)
+    assert math.isclose(ps, 0.238095, rel_tol=1e-4)
+
+
+def test_proc_line_scales_with_enemies_hit_and_multiplier():
+    p0, ps = calc.proc_line(20.0, 0.4, chance=0.5, enemies_hit=3.0, multiplier=0.5)
+    assert math.isclose(p0, 15.0)
+    assert math.isclose(ps, 0.3)

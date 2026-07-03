@@ -1,7 +1,7 @@
 [project]
-name = "brotato-coach"
-version = "0.1.0"
-description = "Deterministic theorycrafter core + MCP server for a Brotato AI coach"
+name = "spudcoach"
+version = "0.2.0"
+description = "Deterministic Brotato theorycrafter core + MCP server (spud coach)"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 classifiers = [
@@ -9,6 +9,13 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = ["mcp>=1.2.0"]
+
+[project.scripts]
+spudcoach = "brotato_coach.server:main"
+
+[project.urls]
+Homepage = "https://spudcoach.fyi"
+Repository = "https://github.com/BrendanL79/spud-coach"
 
 [dependency-groups]
 dev = ["pytest>=8.0"]

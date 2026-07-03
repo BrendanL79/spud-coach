@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from brotato_coach import calc
+from brotato_coach.builders.localization import resolve_text
+from brotato_coach.builders.procs import PROC_MODELS
 from brotato_coach.tres import parse_tres
 
 
@@ -26,8 +28,11 @@ def _weapon_effect_record(text: str) -> dict:
 def build_weapon_record(stats_text: str, data_text: str,
                         effect_texts: list[str] | None = None, *,
                         weapon_id: str, name: str, tier: int,
-                        classes: list[str] | None = None) -> dict:
+                        classes: list[str] | None = None,
+                        proc_models: dict | None = None,
+                        tr: dict[str, str] | None = None) -> dict:
     s = parse_tres(stats_text).resource
+    d = parse_tres(data_text).resource
 
     cooldown = float(s.get("cooldown", 0))
     recoil_duration = float(s.get("recoil_duration", 0.0))
@@ -44,9 +49,26 @@ def build_weapon_record(stats_text: str, data_text: str,
     ct = calc.cycle_time(recoil_duration, cooldown, burst=burst)
     dps0, slope = calc.dps_line(base_damage, _rd_coefficient(scaling_stats), ct, accuracy)
 
+    effects = [_weapon_effect_record(t) for t in (effect_texts or [])]
+    models = PROC_MODELS if proc_models is None else proc_models
+    proc0 = proc_slope = 0.0
+    unmodeled: list[str] = []
+    for eff in effects:
+        model = models.get(str(eff.get("key", "")))
+        if model is not None and model["damage_source"] == "weapon_damage":
+            p0, ps = calc.proc_line(dps0, slope, float(eff.get("chance", 1.0)),
+                                    model["default_enemies_hit"],
+                                    model["damage_multiplier"])
+            proc0 += p0
+            proc_slope += ps
+        elif eff.get("key"):
+            unmodeled.append(str(eff["key"]))
+
     return {
         "id": weapon_id,
         "name": name,
+        "display_name": resolve_text(tr, d.get("name"), name),
+        "description": resolve_text(tr, d.get("description")),
         "tier": tier,
         "base_damage": base_damage,
         "cooldown": cooldown,
@@ -61,11 +83,13 @@ def build_weapon_record(stats_text: str, data_text: str,
         "cycle_time": ct,
         "dps_at_zero_rd": dps0,
         "dps_slope_per_rd": slope,
-        # Weapon-class set membership (e.g. ["Gun", "Explosive"]); resolved from
-        # the data .tres `sets` ext_resources by the discover step.
         "sets": list(classes or []),
         # On-hit effects (e.g. exploding projectile), resolved from the data
-        # .tres `effects` ext_resources. NOTE: these are surfaced for reasoning;
-        # the DPS math does not yet factor procs into dps_at_zero_rd/slope.
-        "effects": [_weapon_effect_record(t) for t in (effect_texts or [])],
+        # .tres `effects` ext_resources. Effects with a verified PROC_MODELS
+        # entry contribute the proc_dps_* expected line; the rest are listed
+        # in unmodeled_effects.
+        "effects": effects,
+        "proc_dps_at_zero_rd": proc0,
+        "proc_dps_slope_per_rd": proc_slope,
+        "unmodeled_effects": unmodeled,
     }

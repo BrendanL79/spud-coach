@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from brotato_coach.builders.localization import resolve_text
 from brotato_coach.tres import parse_tres
 
 _CAP_STAT_MAP = {
@@ -15,20 +16,21 @@ _CAP_STAT_MAP = {
 _DAMAGE_TAGS = ("stat_melee_damage", "stat_ranged_damage", "stat_elemental_damage")
 
 
-def _effect_record(text: str) -> dict:
+def _effect_record(text: str, tr: dict[str, str] | None = None) -> dict:
     r = parse_tres(text).resource
     return {
         "key": r.get("key", ""),
         "value": r.get("value", 0),
         "effect_sign": r.get("effect_sign", 0),
         "text_key": r.get("text_key", ""),
+        "text": resolve_text(tr, r.get("text_key")),
     }
 
 
 def build_item_record(data_text: str, effect_texts: list[str], *, item_id: str,
-                      name: str) -> dict:
+                      name: str, tr: dict[str, str] | None = None) -> dict:
     d = parse_tres(data_text).resource
-    effects = [_effect_record(t) for t in effect_texts]
+    effects = [_effect_record(t, tr) for t in effect_texts]
     tags = d.get("tags", []) or []
 
     archetype: list[str] = []
@@ -50,6 +52,8 @@ def build_item_record(data_text: str, effect_texts: list[str], *, item_id: str,
     return {
         "id": item_id,
         "name": name,
+        "display_name": resolve_text(tr, d.get("name"), name),
+        "description": resolve_text(tr, d.get("description")),
         "tier": d.get("tier", 0),
         "value": d.get("value", 0),
         "tags": tags,
