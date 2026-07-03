@@ -55,3 +55,8 @@ def test_suggestions_include_display_names():
     rec = query.get_weapon(ds, "smg mk 2")
     assert rec["error"] == "not_found"
     assert "SMG Mk. II" in rec["did_you_mean"]
+
+
+def test_empty_query_is_not_found():
+    rec = query.get_weapon(DS, "")
+    assert rec["error"] == "not_found"

@@ -24,6 +24,8 @@ def _suggest(records: list[dict], name: str) -> list[str]:
 
 def _match(records: list[dict], name: str) -> list[dict]:
     low = name.lower()
+    if not low:
+        return []
     return [r for r in records
             if low in (r.get("name", "").lower(),
                        r.get("display_name", "").lower(),
