@@ -91,15 +91,19 @@ Once connected, just ask in natural language — the model routes your question 
 
 ## Use with Claude Desktop
 
-Claude Desktop can launch the server directly with [`uvx`](https://docs.astral.sh/uv/), which fetches
-and caches the package straight from this repo — no manual clone. You still supply your own locally
-built `brotato.json` (the dataset is never distributed).
+Claude Desktop can launch the server with [`uvx`](https://docs.astral.sh/uv/) in two forms: fetch
+straight from this repo (auto-updates on restart, but needs `git` reachable — see the Windows note
+below), or point at a **local checkout** (nothing fetched at runtime; the most reliable form on
+Windows). Either way you supply your own locally built `brotato.json` — the dataset is never
+distributed.
 
 1. Install `uv` on the machine running Claude Desktop (`winget install astral-sh.uv` on Windows,
    or the [standalone installer](https://docs.astral.sh/uv/getting-started/installation/)).
 2. Open the config file and add the `spud-coach` server:
    - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
    - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+   Fetch-from-repo form:
 
    ```json
    {
@@ -118,12 +122,48 @@ built `brotato.json` (the dataset is never distributed).
 
    Point `--data` at your built dataset (`SPUDCOACH_DATA` works as an env-var alternative). On macOS
    use a POSIX path like `/Users/<you>/brotato.json`.
-3. Fully restart Claude Desktop.
+3. Fully restart Claude Desktop (quit from the tray, not just close the window).
 
-**Windows PATH note:** Claude Desktop launches MCP servers with a restricted `PATH`, so a bare
-`"command": "uvx"` may not resolve. If the server fails to start, use the absolute path instead —
-typically `"command": "C:\\Users\\<you>\\.local\\bin\\uvx.exe"` (run `where uvx` in a terminal to
-confirm the location).
+### Windows: "Git executable not found" (or `uvx` not found)
+
+The `git+https://…` form makes uv shell out to a `git` executable. **Claude Desktop does not pass
+your shell — or even your System `PATH` — to the MCP subprocess;** it spawns servers with its own
+trimmed environment. (The `PATH` it prints in the logs is its command-resolution list, *not* what
+the child process receives.) So a `git` that runs fine in PowerShell, installed in a System-`PATH`
+directory, can still come back "not found" here — and a bare `"command": "uvx"` can fail to resolve
+for the same reason. Two fixes:
+
+- **Point at a local checkout — no runtime git (recommended).** Clone once in a terminal where git
+  works, then use `--from <folder>` instead of `--from git+…`:
+
+  ```powershell
+  git clone https://github.com/BrendanL79/spud-coach C:\Users\<you>\src\spud-coach
+  ```
+  ```json
+  {
+    "mcpServers": {
+      "spud-coach": {
+        "command": "uvx",
+        "args": ["--from", "C:\\Users\\<you>\\src\\spud-coach", "spudcoach",
+                 "--data", "C:\\Users\\<you>\\path\\to\\brotato.json"]
+      }
+    }
+  }
+  ```
+
+  Update later with `git pull` in that folder, then restart Desktop.
+
+- **Or force the tools onto the server's `PATH`.** Keep the `git+https` form and add an `env` block
+  that hands the child an explicit `PATH` — git, plus uv's bin and the winget-links dir:
+
+  ```json
+  "env": {
+    "PATH": "C:\\Program Files\\Git\\cmd;C:\\Users\\<you>\\.local\\bin;C:\\Users\\<you>\\AppData\\Local\\Microsoft\\WinGet\\Links;C:\\Windows\\System32"
+  }
+  ```
+
+  If `uvx` itself still isn't found, also set `"command"` to its absolute path (`Get-Command uvx` to
+  locate it, e.g. `C:\Users\<you>\AppData\Local\Microsoft\WinGet\Links\uvx.exe`).
 
 ## Available tools
 
