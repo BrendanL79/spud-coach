@@ -118,12 +118,23 @@ def test_weapon_record_proc_line_from_model():
 
 
 def test_weapon_record_unmodeled_effect_contributes_zero_and_is_listed():
-    # default PROC_MODELS ships empty until verified against recovered/ code
-    rec = build_weapon_record(STATS, DATA, [EXPLODE_EFFECT], weapon_id="w",
+    # effect_burning has no PROC_MODELS entry (unverified against recovered/
+    # code) — unlike the exploding-effect keys, which are now modeled.
+    burning_effect = EXPLODE_EFFECT.replace("effect_explode_custom", "effect_burning")
+    rec = build_weapon_record(STATS, DATA, [burning_effect], weapon_id="w",
                               name="W", tier=4)
     assert rec["proc_dps_at_zero_rd"] == 0.0
     assert rec["proc_dps_slope_per_rd"] == 0.0
-    assert rec["unmodeled_effects"] == ["effect_explode_custom"]
+    assert rec["unmodeled_effects"] == ["effect_burning"]
+
+
+def test_default_proc_models_cover_explode_keys():
+    for key in ("effect_explode_custom", "effect_explode", "effect_explode_melee"):
+        effect = EXPLODE_EFFECT.replace("effect_explode_custom", key)
+        rec = build_weapon_record(STATS, DATA, [effect], weapon_id="w",
+                                  name="W", tier=4)  # no injected models: real table
+        assert rec["proc_dps_at_zero_rd"] > 0, key
+        assert rec["unmodeled_effects"] == [], key
 
 
 def test_weapon_record_no_effects_has_zero_proc_fields():

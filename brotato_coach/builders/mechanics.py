@@ -23,16 +23,26 @@ _WEAPON_SCALING = ("Weapon scaling stat: each weapon whose scaling_stats lists "
 
 STAT_MECHANICS: dict[str, dict] = {
     "stat_max_hp": _m(cap={"cap_key": "hp_cap"},
-                      summary="Capped via hp_cap; cap-at-current-value items "
-                              "(Handcuffs) can freeze it for the run."),
+                      summary="Capped via hp_cap, but the default cap is "
+                              "LARGE_NUMBER (99999999) — effectively infinite "
+                              "until an item (Handcuffs) sets a real ceiling "
+                              "and freezes it for the run."),
     "stat_speed": _m(cap={"cap_key": "speed_cap"},
-                     summary="Capped via speed_cap; freezable by Shackles "
-                             "(cap-at-current-value)."),
+                     summary="Capped via speed_cap, but the default cap is "
+                             "LARGE_NUMBER (99999999) — effectively infinite "
+                             "until Shackles sets a real ceiling and freezes "
+                             "it (cap-at-current-value)."),
     "stat_dodge": _m(cap={"cap_key": "dodge_cap"},
-                     summary="Capped via dodge_cap (utils.gd get_capped_stat)."),
+                     summary="Capped via dodge_cap (utils.gd get_capped_stat); "
+                             "unlike hp/speed/crit_chance, the default cap is "
+                             "60, not effectively-infinite — it binds from the "
+                             "start of every run."),
     "stat_crit_chance": _m(cap={"cap_key": "crit_chance_cap"},
                            summary="Capped via crit_chance_cap (utils.gd "
-                                   "get_capped_stat)."),
+                                   "get_capped_stat), but the default cap is "
+                                   "LARGE_NUMBER (99999999) — effectively "
+                                   "infinite until an item sets a real "
+                                   "ceiling."),
     "stat_curse": _m(cap={"cap_key": "curse_cap"}, special="curse_sqrt_penalty",
                      safe_below_zero=True, avoid_positive=True,
                      summary="Positive curse scales enemy damage/HP by a "
@@ -60,4 +70,45 @@ STAT_MECHANICS: dict[str, dict] = {
     "stat_melee_damage": _m(special="weapon_scaling_stat", summary=_WEAPON_SCALING),
     "stat_elemental_damage": _m(special="weapon_scaling_stat", summary=_WEAPON_SCALING),
     "stat_engineering": _m(special="weapon_scaling_stat", summary=_WEAPON_SCALING),
+    "stat_percent_damage": _m(
+        summary="Multiplicative global weapon-damage bonus: damage x "
+                "(1 + stat/100), combined with set-bonus and explosion-damage "
+                "bonuses inside the same bracket before rounding "
+                "(weapon_service.gd:239,249). Floor 1 damage. Not in "
+                "utils.gd's cap list — uncapped. Negative values reduce all "
+                "weapon damage."),
+    "stat_armor": _m(
+        summary="Damage-taken multiplier 10/(10 + abs(armor)/1.5) — "
+                "diminishing returns, never reaches 0 (damage floor 1). Not "
+                "in utils.gd's cap list — uncapped. NEGATIVE armor amplifies "
+                "damage taken to (2 - coef) instead of reducing it "
+                "(run_data.gd get_armor_coef, applied player.gd:310-311)."),
+    "stat_luck": _m(
+        summary="Drop-chance multiplier x (1 + luck/100). Not in utils.gd's "
+                "cap list — uncapped. NEGATIVE luck DIVIDES chance by "
+                "(1 + abs(luck)/100) rather than subtracting — a "
+                "diminishing-returns penalty, not symmetric with the "
+                "positive bonus (item_service.gd:161-165, 523-537)."),
+    "stat_harvesting": _m(
+        summary="Pays out at end of every wave: val = harvesting_stat + "
+                "bonuses; if val >= 0 it grants BOTH gold AND xp equal to "
+                "val (1 material + 1 XP per point) — if val < 0 it instead "
+                "REMOVES that much gold every wave, it is not a no-op "
+                "(main.gd manage_harvesting, 1289-1325). The stat itself "
+                "grows ~5%/wave (ceil(stat * harvesting_growth/100), default "
+                "growth 5) while stat > 0 and the run is within its normal "
+                "waves; in endless it instead decays 20%/wave "
+                "(ENDLESS_HARVESTING_DECREASE = 20); at stat <= 0 neither "
+                "growth nor decay happens (main.gd "
+                "_on_HarvestingTimer_timeout, 1521-1549). Not in utils.gd's "
+                "cap list — uncapped."),
+    "stat_range": _m(
+        summary="Added flat to weapon max_range. Ranged weapons get the "
+                "full stat (weapon_service.gd::init_ranged_stats:42 / "
+                "init_ranged_pet_stats:78); melee weapons get only half "
+                "(stat/2, weapon_service.gd::init_melee_stats:29 / "
+                "init_melee_pet_stats:66) — both are floored at that "
+                "weapon's own min_range, so it can shrink an increase's "
+                "effect but never push range below the weapon's floor. Not "
+                "in utils.gd's cap list — uncapped."),
 }
