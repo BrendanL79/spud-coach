@@ -7,7 +7,7 @@ def _names(records: list[dict]) -> list[str]:
     seen: set[str] = set()
     out: list[str] = []
     for r in records:
-        for v in (r.get("name", ""), r.get("id", "")):
+        for v in (r.get("name", ""), r.get("display_name", ""), r.get("id", "")):
             if v and v not in seen:
                 seen.add(v)
                 out.append(v)
@@ -15,12 +15,19 @@ def _names(records: list[dict]) -> list[str]:
 
 
 def _suggest(records: list[dict], name: str) -> list[str]:
-    return difflib.get_close_matches(name, _names(records), n=3, cutoff=0.5)
+    names = _names(records)
+    names_lower = [n.lower() for n in names]
+    name_to_original = {n.lower(): n for n in names}
+    matches = difflib.get_close_matches(name.lower(), names_lower, n=3, cutoff=0.5)
+    return [name_to_original[m] for m in matches]
 
 
 def _match(records: list[dict], name: str) -> list[dict]:
     low = name.lower()
-    return [r for r in records if r.get("name", "").lower() == low or r.get("id", "").lower() == low]
+    return [r for r in records
+            if low in (r.get("name", "").lower(),
+                       r.get("display_name", "").lower(),
+                       r.get("id", "").lower())]
 
 
 def get_weapon(ds: dict, name: str, tier: int | None = None) -> dict:
