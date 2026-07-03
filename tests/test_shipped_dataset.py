@@ -34,3 +34,14 @@ def test_shipped_dataset_is_complete():
     # proc weapons carry a nonzero expected proc line
     sh = query.get_weapon(ds, "Shredder", tier=1)
     assert sh["proc_dps_at_zero_rd"] > 0
+
+    # localization resolved real in-game text
+    sh = query.get_weapon(ds, "Shredder", tier=1)
+    assert sh["display_name"] == "Shredder"
+    hc = query.get_item(ds, "Handcuffs")
+    assert hc["display_name"] == "Handcuffs"
+    assert any(e["text"] for e in hc["effects"])  # effect text_keys resolved
+    rg = query.get_character(ds, "Ranger")
+    assert rg["display_name"] == "Ranger"
+    # schema_version 2 = proc-aware + localized dataset
+    assert ds["schema_version"] == 2
