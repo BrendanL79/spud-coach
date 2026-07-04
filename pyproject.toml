@@ -1,6 +1,6 @@
 [project]
 name = "spudcoach"
-version = "0.9.1"
+version = "0.9.2"
 description = "Deterministic Brotato theorycrafter core + MCP server (spud coach)"
 readme = "README.md"
 requires-python = ">=3.11"
