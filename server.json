@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.brendanl79/spudcoach",
+  "title": "Brotato Coach",
+  "description": "Deterministic Brotato theorycrafter MCP server. Facts + math over data you build from your own game install (copyrighted files aren't distributed).",
+  "version": "0.9.0",
+  "repository": {
+    "url": "https://github.com/BrendanL79/spud-coach",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/BrendanL79/spud-coach",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "spudcoach",
+      "version": "0.9.0",
+      "runtimeHint": "uvx",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "SPUDCOACH_DATA",
+          "description": "Path to a locally built brotato.json dataset (see README for how to build one — the game data itself is never distributed). Equivalent to the --data CLI flag.",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}
