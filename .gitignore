@@ -20,3 +20,9 @@ __pycache__/
 # Derived game-stat dataset — not redistributed; regenerate with build_dataset.py
 # from your own Brotato install (see README).
 data/brotato.json
+
+# Brotato run saves used as coach input — game-derived, never redistributed.
+data/run*.json
+
+# Local game-data archives (extraction bundles) — never redistributed.
+*.tar

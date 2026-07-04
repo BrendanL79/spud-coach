@@ -77,16 +77,43 @@ def _title(folder: str) -> str:
     return folder.replace("_", " ").title()
 
 
+def _find_item_data_path(dir_path: str, folder: str) -> str | None:
+    """Locate an item dir's main data file.
+
+    Most items name it "{folder}_data.tres", but pets (and a few others,
+    e.g. evil_hat) ship it as a bare "{folder}.tres" instead. Identify the
+    real data file by its script reference (items/global/item_data.gd)
+    rather than assuming a fixed filename.
+    """
+    std = os.path.join(dir_path, f"{folder}_data.tres")
+    if os.path.isfile(std):
+        return std
+    for path in sorted(glob.glob(os.path.join(dir_path, "*.tres"))):
+        with open(path, encoding="utf-8") as fh:
+            doc = parse_tres(fh.read())
+        script_ref = doc.resource.get("script")
+        if isinstance(script_ref, dict) and "__ext__" in script_ref:
+            ext = doc.ext_resources.get(script_ref["__ext__"]) or {}
+            if str(ext.get("path", "")).endswith("item_data.gd"):
+                return path
+    return None
+
+
 def find_item_dirs(extracted_root: str) -> list[dict]:
     results = []
     for d in sorted(glob.glob(os.path.join(extracted_root, "items", "all", "*"))):
         if not os.path.isdir(d):
             continue
         folder = os.path.basename(d)
-        data = os.path.join(d, f"{folder}_data.tres")
-        if not os.path.isfile(data):
+        data = _find_item_data_path(d, folder)
+        if not data:
             continue
-        effects = sorted(glob.glob(os.path.join(d, f"{folder}_effect_*.tres")))
+        # The effect files share the data file's own prefix, which isn't
+        # always the folder name (e.g. eyes_surgery/'s files are prefixed
+        # "eye_surgery").
+        data_name = os.path.basename(data)
+        prefix = data_name[: -len("_data.tres")] if data_name.endswith("_data.tres") else data_name[: -len(".tres")]
+        effects = sorted(glob.glob(os.path.join(d, f"{prefix}_effect_*.tres")))
         results.append({
             "item_id": f"item_{folder}", "name": _title(folder),
             "data_path": data, "effect_paths": effects,

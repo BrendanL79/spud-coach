@@ -6,7 +6,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from brotato_coach import answers, dataset, evaluate, query
+from brotato_coach import answers, dataset, evaluate, query, runfile
 from brotato_coach.schemas import Stats
 
 
@@ -19,8 +19,23 @@ def _safe(fn):
     return wrapper
 
 
+_INSTRUCTIONS = """\
+This server is the authoritative source for Brotato facts: it's built from a
+versioned, fan-extracted copy of the game's own data files, not from any
+model's training data. Training-data knowledge of Brotato is frequently
+stale, incomplete, or wrong for the loaded game version (balance patches,
+renamed items, new content) — never answer a Brotato weapon/item/character/
+mechanics question from memory. Always call the matching tool instead, even
+if the question seems simple or you're confident you already know the
+answer. If no tool seems to fit, call get_filter_options or list_items /
+list_weapons to check what actually exists before concluding something isn't
+present. Call check_dataset_version if you need to confirm which game
+version these facts are from.
+"""
+
+
 def build_server(ds: dict) -> FastMCP:
-    mcp = FastMCP("brotato-coach")
+    mcp = FastMCP("brotato-coach", instructions=_INSTRUCTIONS)
 
     @mcp.tool()
     def get_weapon(name: str, tier: int | None = None) -> dict[str, Any]:
@@ -210,6 +225,37 @@ def build_server(ds: dict) -> FastMCP:
                 "weapon_classes": _uniq(s.get("name") or s.get("id") for s in ds.get("sets", [])),
             }
         return _safe(_compute)()
+
+    @mcp.tool()
+    def evaluate_run(path: str | None = None,
+                     run_json: str | dict[str, Any] | None = None) -> dict[str, Any]:
+        """Post-mortem a whole Brotato run from its `run.json` save in one call.
+
+        Invoke this whenever the player provides a Brotato run save — either by
+        uploading/pasting the `run.json` (pass its contents as `run_json`) or by
+        pointing at it in their game data directory (pass the file path as
+        `path`). Provide exactly one of the two.
+
+        Returns the run context (character, wave reached, danger), the realized
+        stats, a weapon-DPS ranking at those stats, weapon-class set progress,
+        and a per-item live/wasted/harmful verdict — everything needed to judge
+        the build without the player re-entering it by hand. Unknown ids (e.g.
+        content newer than the loaded dataset) are listed under `notes`; a
+        malformed save returns an `error` field instead.
+        """
+        try:
+            # A client (or FastMCP) may deliver run_json already parsed to an
+            # object; only hit load_run's JSON/file path when it hasn't been.
+            if isinstance(run_json, dict):
+                if path is not None:
+                    raise runfile.RunFormatError(
+                        "provide exactly one of `path` or `run_json`")
+                raw = run_json
+            else:
+                raw = runfile.load_run(path=path, run_json=run_json)
+        except runfile.RunFormatError as exc:
+            return {"error": "bad_run_file", "detail": str(exc)}
+        return _safe(answers.evaluate_run)(ds=ds, run=raw)
 
     @mcp.tool()
     def check_dataset_version() -> dict[str, Any]:

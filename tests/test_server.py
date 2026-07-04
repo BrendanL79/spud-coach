@@ -106,6 +106,70 @@ def test_loadout_set_bonuses_tool():
     assert result["classes"][0]["active"][0]["effect"]["value"] == 10
 
 
+_RUN_DS = {
+    **DS,
+    "weapons": [{"id": "weapon_smg", "name": "SMG", "tier": 1, "sets": ["Gun"],
+                 "dps_at_zero_rd": 10.0, "dps_slope_per_rd": 1.0, "scaling_stats": []}],
+    "characters": [{"id": "character_ranger", "name": "Ranger",
+                    "gain_modifiers": [], "wanted_tags": [],
+                    "banned_item_groups": [], "flat_bonuses": [],
+                    "special_effects": []}],
+    "sets": [{"id": "set_gun", "name": "Gun",
+              "bonuses": [{"count": 2, "effect": {"key": "stat_range", "value": 10}}]}],
+}
+
+
+def _minimal_run() -> str:
+    import json
+
+    from brotato_coach.runfile import godot_string_hash
+    return json.dumps({
+        "current_run_state": {
+            "current_wave": 5, "current_difficulty": 3, "nb_of_waves": 20,
+            "is_endless_run": False, "is_coop_run": False,
+            "players_data": [{
+                "current_character": "character_ranger", "current_health": 10,
+                "gold": 40, "current_level": 4,
+                "weapons": [{"weapon_id": "weapon_smg", "tier": "0"}],
+                "items": [{"my_id": "character_ranger"}],
+                "effects": {str(godot_string_hash("stat_ranged_damage")): 12},
+            }],
+        }
+    })
+
+
+def test_evaluate_run_tool_from_inline_json():
+    result = asyncio.run(_call(build_server(_RUN_DS), "evaluate_run",
+                               run_json=_minimal_run()))
+    assert result["run"]["character"] == "Ranger"
+    assert result["run"]["wave"] == 5
+    assert result["realized_stats"] == {"ranged_damage": 12}
+    assert result["weapon_dps_ranking"][0]["name"] == "SMG"
+
+
+def test_evaluate_run_tool_from_path(tmp_path):
+    f = tmp_path / "run.json"
+    f.write_text(_minimal_run())
+    result = asyncio.run(_call(build_server(_RUN_DS), "evaluate_run",
+                               path=str(f)))
+    assert result["run"]["character"] == "Ranger"
+
+
+def test_evaluate_run_tool_bad_file_is_structured_error():
+    result = asyncio.run(_call(build_server(_RUN_DS), "evaluate_run",
+                               run_json="{not json"))
+    assert result["error"] == "bad_run_file"
+    assert "detail" in result
+
+
+def test_evaluate_run_tool_rejects_both_path_and_dict():
+    # The dict run_json branch must still enforce "exactly one of path/run_json".
+    result = asyncio.run(_call(build_server(_RUN_DS), "evaluate_run",
+                               path="x", run_json={"current_run_state": {}}))
+    assert result["error"] == "bad_run_file"
+    assert "exactly one" in result["detail"]
+
+
 def test_data_path_default():
     from brotato_coach import server
     assert server._data_path([]) == "data/brotato.json"

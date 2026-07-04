@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import difflib
 
-from brotato_coach import calc, query
+from brotato_coach import calc, evaluate, query, runfile
 
 
 def _weapon_at(ds: dict, name: str, tier: int) -> dict | None:
@@ -119,3 +119,58 @@ def loadout_set_bonuses(ds: dict, weapon_names: list[str]) -> dict:
             nxt = {**first, "needs": first["count"] - n}
         classes.append({"class": cls, "count": n, "active": active, "next": nxt})
     return {"classes": classes, "unknown_weapons": unknown}
+
+
+def evaluate_run(ds: dict, run: dict) -> dict:
+    """One-call run post-mortem: parse a Brotato save and evaluate the whole
+    build against the loaded dataset.
+
+    Returns run context, realized stats, a weapon-DPS ranking at those stats,
+    weapon-class set progress, and a per-item live/wasted/harmful verdict.
+    Unknown weapon/item ids (e.g. content newer than the dataset) are collected
+    in `notes` rather than dropped silently. A malformed save comes back as
+    `{"error": "bad_run_format", "detail": ...}`.
+    """
+    try:
+        build = runfile.parse_run(run)
+    except runfile.RunFormatError as exc:
+        return {"error": "bad_run_format", "detail": str(exc)}
+
+    stats = build["stats"]
+    notes: list[str] = []
+
+    char_rec = query.get_character(ds, build["character"])
+    char_name = char_rec["name"] if "id" in char_rec else build["character"]
+    if "id" not in char_rec:
+        notes.append(f"unknown character '{build['character']}' — "
+                     "not in the loaded dataset")
+
+    ranking = compare_weapons(
+        ds, [(w["id"], w["tier"]) for w in build["weapons"]], stats)["ranking"]
+
+    weapon_ids = [w["id"] for w in build["weapons"]]
+    set_bonuses = loadout_set_bonuses(ds, weapon_ids)
+    for u in set_bonuses.get("unknown_weapons", []):
+        notes.append(f"unknown weapon '{u['name']}' — not in the loaded dataset")
+
+    item_verdicts = []
+    for item_id in build["items"]:
+        verdict = evaluate.evaluate_item_for_build(ds, item_id, build["character"], stats)
+        if "summary" in verdict:
+            item_verdicts.append(verdict)
+        else:
+            notes.append(f"unknown item '{item_id}' — not in the loaded dataset")
+
+    ctx = build["context"]
+    if ctx.get("coop"):
+        notes.append("co-op run — only player 1's build was analyzed")
+
+    return {
+        "run": {"character": char_name, "character_id": build["character"], **ctx},
+        "realized_stats": stats,
+        "weapons": build["weapons"],
+        "weapon_dps_ranking": ranking,
+        "set_bonuses": set_bonuses,
+        "item_verdicts": item_verdicts,
+        "notes": notes,
+    }

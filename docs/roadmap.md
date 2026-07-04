@@ -25,6 +25,14 @@ already have.
 
 ## Bigger build
 
+- ~~**Ingest run saves**~~ — **done.** The `evaluate_run` MCP tool parses a
+  real Brotato `run.json` (uploaded inline or read from a path) and returns a
+  one-call post-mortem: run context, realized stats, weapon-DPS ranking, set
+  progress, and per-item verdicts. Save-format details (the djb2-hashed
+  `effects` keys, 0-indexed weapon tiers, character-as-pseudo-item) live in
+  `brotato_coach/runfile.py`; the parser validates by structure and fails
+  loudly on an unrecognized shape. Feeds the reasoning in
+  `docs/run-postmortem-methodology.md`.
 - **Incorporate enemy data** — build a bestiary layer from the extracted
   `entities/units/enemies/` tree so the coach can give threat- and wave-aware
   advice (what's coming at a given wave / danger level), not just build-only
