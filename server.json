@@ -1,9 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.brendanl79/spudcoach",
+  "name": "io.github.BrendanL79/spudcoach",
   "title": "Brotato Coach",
   "description": "Deterministic Brotato theorycrafter MCP server: facts and math, not guesses or tier lists.",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "repository": {
     "url": "https://github.com/BrendanL79/spud-coach",
     "source": "github"
@@ -14,7 +14,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "spudcoach",
-      "version": "0.9.2",
+      "version": "0.9.3",
       "runtimeHint": "uvx",
       "transport": { "type": "stdio" },
       "environmentVariables": [

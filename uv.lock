@@ -687,7 +687,7 @@ wheels = [
 
 [[package]]
 name = "spudcoach"
-version = "0.9.2"
+version = "0.9.3"
 source = { editable = "." }
 dependencies = [
     { name = "mcp" },

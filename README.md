@@ -1,6 +1,6 @@
 # Brotato Coach
 
-<!-- mcp-name: io.github.brendanl79/spudcoach -->
+<!-- mcp-name: io.github.BrendanL79/spudcoach -->
 
 A deterministic theorycrafter for [Brotato](https://store.steampowered.com/app/1942280/Brotato/),
 delivered as an MCP server you can chat with from Claude Code (and other MCP clients).
