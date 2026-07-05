@@ -36,8 +36,24 @@ _EXPLODE_MODEL = {
     "default_enemies_hit": 1.0,
 }
 
+# Burning effect: a chance-per-hit damage-over-time proc, independent of the
+# weapon's own damage line (it scales off stat_elemental_damage, not RD).
+# Evidence: docs/proc-mechanics.md (unit.tscn:52 BurningTimer wait_time=0.5;
+# unit.gd apply_burning/burn-tick handler). Modeled only when the weapon's
+# own cycle_time fits inside the burn's duration window at chance==1.0 —
+# verified true for every shipped burn weapon (Torch, Fireball, Wand,
+# Flamethrower, Particle Accelerator, Flaming Knuckles). builders/weapons.py
+# enforces this precondition and falls back to unmodeled_effects otherwise,
+# rather than guess at an unverified duty-cycle model for chance < 1.0 or a
+# slower weapon — no shipped weapon exercises either case.
+_BURN_MODEL = {
+    "damage_source": "burn_dot",
+    "tick_interval": 0.5,
+}
+
 PROC_MODELS: dict[str, dict] = {
     "effect_explode_custom": _EXPLODE_MODEL,
     "effect_explode": _EXPLODE_MODEL,
     "effect_explode_melee": _EXPLODE_MODEL,
+    "effect_burning": _BURN_MODEL,
 }

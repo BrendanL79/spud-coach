@@ -195,3 +195,50 @@ def test_weapon_record_effect_without_companion_has_no_burning_data_key():
     rec = build_weapon_record(STATS, DATA, [BURNING_EFFECT],
                               weapon_id="w", name="W", tier=1)
     assert "burning_data" not in rec["effects"][0]
+
+
+def _burning_data(chance=1.0, damage=3, duration=3):
+    return ('[gd_resource type="Resource" format=2]\n[resource]\n'
+            f'chance = {chance}\ndamage = {damage}\nduration = {duration}\n'
+            'spread = 0\nscaling_stats = [ [ "stat_elemental_damage", 1.0 ] ]\n'
+            'is_global_burn = false\n')
+
+
+def test_weapon_record_burn_dot_contributes_when_preconditions_hold():
+    # Torch T1: cooldown 31 frames, recoil 0.1 -> cycle_time ~0.717s;
+    # duration 3 ticks * 0.5s tick_interval = 1.5s window comfortably
+    # sustains continuous uptime.
+    stats = ('[gd_resource type="Resource" format=2]\n[resource]\n'
+             'cooldown = 31\ndamage = 5\naccuracy = 1.0\nrecoil_duration = 0.1\n'
+             'scaling_stats = [ [ "stat_melee_damage", 1.0 ] ]\n')
+    rec = build_weapon_record(stats, DATA, [BURNING_EFFECT], [_burning_data()],
+                              weapon_id="w", name="W", tier=1)
+    assert math.isclose(rec["proc_dps_at_zero_rd"], 6.0)  # 3 damage / 0.5s
+    assert rec["proc_dps_slope_per_rd"] == 0.0
+    assert rec["unmodeled_effects"] == []
+
+
+def test_weapon_record_burn_dot_falls_back_when_cycle_time_exceeds_window():
+    # Hypothetical slow weapon: cooldown 600 frames (10s) vs. a 1.5s window.
+    stats = ('[gd_resource type="Resource" format=2]\n[resource]\n'
+             'cooldown = 600\ndamage = 5\naccuracy = 1.0\nrecoil_duration = 0.1\n'
+             'scaling_stats = [ [ "stat_melee_damage", 1.0 ] ]\n')
+    rec = build_weapon_record(stats, DATA, [BURNING_EFFECT], [_burning_data()],
+                              weapon_id="w", name="W", tier=1)
+    assert rec["proc_dps_at_zero_rd"] == 0.0
+    assert rec["unmodeled_effects"] == ["effect_burning"]
+
+
+def test_weapon_record_burn_dot_falls_back_when_chance_below_one():
+    rec = build_weapon_record(STATS, DATA, [BURNING_EFFECT],
+                              [_burning_data(chance=0.5)],
+                              weapon_id="w", name="W", tier=1)
+    assert rec["proc_dps_at_zero_rd"] == 0.0
+    assert rec["unmodeled_effects"] == ["effect_burning"]
+
+
+def test_weapon_record_burn_dot_falls_back_without_burning_data():
+    rec = build_weapon_record(STATS, DATA, [BURNING_EFFECT],
+                              weapon_id="w", name="W", tier=1)
+    assert rec["proc_dps_at_zero_rd"] == 0.0
+    assert rec["unmodeled_effects"] == ["effect_burning"]

@@ -66,12 +66,25 @@ def build_weapon_record(stats_text: str, data_text: str,
     unmodeled: list[str] = []
     for eff in effects:
         model = models.get(str(eff.get("key", "")))
-        if model is not None and model["damage_source"] == "weapon_damage":
+        source = model["damage_source"] if model is not None else None
+        if source == "weapon_damage":
             p0, ps = calc.proc_line(dps0, slope, float(eff.get("chance", 1.0)),
                                     model["default_enemies_hit"],
                                     model["damage_multiplier"])
             proc0 += p0
             proc_slope += ps
+        elif source == "burn_dot":
+            bd = eff.get("burning_data") or {}
+            chance = float(bd.get("chance", 0.0))
+            damage = float(bd.get("damage", 0))
+            duration = float(bd.get("duration", 0))
+            window = duration * model["tick_interval"]
+            if chance == 1.0 and window > 0 and ct <= window:
+                p0, ps = calc.burn_dps_line(damage, model["tick_interval"])
+                proc0 += p0
+                proc_slope += ps
+            elif eff.get("key"):
+                unmodeled.append(str(eff["key"]))
         elif eff.get("key"):
             unmodeled.append(str(eff["key"]))
 
