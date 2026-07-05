@@ -35,6 +35,11 @@ def test_shipped_dataset_is_complete():
     sh = query.get_weapon(ds, "Shredder", tier=1)
     assert sh["proc_dps_at_zero_rd"] > 0
 
+    # burn weapons carry a nonzero expected DoT proc line
+    torch = query.get_weapon(ds, "Torch", tier=1)
+    assert torch["proc_dps_at_zero_rd"] > 0
+    assert torch["unmodeled_effects"] == []
+
     # localization resolved real in-game text
     sh = query.get_weapon(ds, "Shredder", tier=1)
     assert sh["display_name"] == "Shredder"

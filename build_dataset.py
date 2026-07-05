@@ -74,9 +74,15 @@ def main(argv=None) -> int:
 
     weapons = []
     for entry in discover.find_weapon_dirs(args.extracted):
+        effect_paths = entry.get("effect_paths", [])
+        burning_data_paths = entry.get("effect_burning_data_paths", {})
+        effect_extra_texts = [
+            _read(burning_data_paths[p]) if p in burning_data_paths else None
+            for p in effect_paths
+        ]
         weapons.append(build_weapon_record(
             _read(entry["stats_path"]), _read(entry["data_path"]),
-            [_read(p) for p in entry.get("effect_paths", [])],
+            [_read(p) for p in effect_paths], effect_extra_texts,
             weapon_id=entry["weapon_id"], name=entry["name"], tier=entry["tier"],
             classes=entry.get("classes", []), tr=tr,
         ))
