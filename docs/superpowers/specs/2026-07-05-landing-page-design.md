@@ -13,8 +13,8 @@ auto-deploy on push.
 ## Scope
 
 One page. No logo/custom mark — typographic only. Sections: hero, "What it
-is," "Install," links (GitHub / PyPI / MCP Registry). No blog, no docs
-section, no testimonials.
+is," "Install," links (GitHub / PyPI / MCP Registry), footer disclaimer. No
+blog, no docs section, no testimonials.
 
 ## Visual direction (validated via the visual brainstorming companion)
 
@@ -66,6 +66,23 @@ section, no testimonials.
     You'll need to build your own dataset before use — the game files are
     copyrighted and never distributed. See the README for how.
     ```
+
+## Footer disclaimer
+
+A fan-project disclaimer at the bottom of the page, small/muted text,
+distinct from the main content:
+
+```
+Spud Coach is an unofficial fan project and is not affiliated with,
+endorsed by, or sponsored by Blobfish or any other developer or publisher
+of Brotato. Brotato is a trademark of its respective owner(s).
+```
+
+Kept deliberately generic rather than naming every studio involved in
+Brotato's development (Blobfish, Erabit Studios for mobile ports, Evil
+Empire for ongoing development as of late 2025) — that list could change
+again, and "Blobfish or any other developer or publisher" covers it without
+needing an update if it does.
 
 ## File structure
 
