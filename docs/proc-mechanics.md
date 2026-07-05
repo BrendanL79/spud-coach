@@ -139,8 +139,8 @@ either case.
 
 Effect `key` values found across `extracted/weapons/*.tres`
 (`grep -rh '^key = ' extracted/weapons/ | sort | uniq -c`), for future
-`PROC_MODELS` entries. Only the exploding-effect keys above are modeled so
-far; everything else here contributes zero to `proc_dps_at_zero_rd` and shows
+`PROC_MODELS` entries. Only the exploding-effect and burning keys above are
+modeled so far; everything else here contributes zero to `proc_dps_at_zero_rd` and shows
 up in a weapon record's `unmodeled_effects` list (except the *(blank key)* row —
 a falsy `key` is silently dropped by the builder, not listed):
 
