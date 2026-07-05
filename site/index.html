@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spud Coach — a deterministic theorycrafter for Brotato</title>
+  <meta name="description" content="Spud Coach is a deterministic theorycrafter for Brotato, delivered as an MCP server. Facts and math, not guesses or tier lists.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@700;800&family=Inter:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero">
+    <h1>Spud Coach</h1>
+    <p class="subhead">
+      A deterministic theorycrafter for Brotato.<br>
+      Facts and math, not guesses or tier lists.
+    </p>
+    <div class="install-cta"><code>uvx spudcoach</code></div>
+    <nav class="links">
+      <a href="https://github.com/BrendanL79/spud-coach">GitHub</a>
+      <span aria-hidden="true"> &middot; </span>
+      <a href="https://pypi.org/project/spudcoach/">PyPI</a>
+      <span aria-hidden="true"> &middot; </span>
+      <a href="https://registry.modelcontextprotocol.io/v0/servers?search=spudcoach">MCP Registry</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="section">
+      <h2>What it is</h2>
+      <p>Is this weapon actually better at your stats? Is your build strong, or did you just get lucky? Spud Coach answers with real numbers pulled straight from the game's data — every weapon, item, and stat interaction computed exactly, not remembered off a tier list.</p>
+    </section>
+
+    <section class="section">
+      <h2>Install</h2>
+      <pre class="install-code"><code>uvx spudcoach</code></pre>
+      <p class="caveat">Requires Python 3.11+ and <a href="https://docs.astral.sh/uv/">uv</a> — <code>uvx</code> comes bundled with it.</p>
+      <p class="caveat">You'll need to build your own dataset before use — the game files are copyrighted and never distributed. See the <a href="https://github.com/BrendanL79/spud-coach#building-the-dataset">README</a> for how.</p>
+    </section>
+  </main>
+
+  <footer class="disclaimer">
+    <p>Spud Coach is an unofficial fan project and is not affiliated with, endorsed by, or sponsored by Blobfish or any other developer or publisher of Brotato. Brotato is a trademark of its respective owner(s).</p>
+  </footer>
+</body>
+</html>
