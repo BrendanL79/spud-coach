@@ -362,3 +362,39 @@ def test_weapon_record_companion_proc_falls_back_without_companion():
                               weapon_id="w", name="W", tier=1)
     assert rec["proc_dps_at_zero_rd"] == 0.0
     assert rec["unmodeled_effects"] == ["effect_lightning_on_hit"]
+
+
+def test_weapon_record_targeted_companion_defaults_can_bounce_true():
+    # companion omits can_bounce entirely -> engine default True keeps bounce
+    companion = ('[gd_resource type="Resource" format=2]\n[resource]\n'
+                 'damage = 5\nscaling_stats = [ [ "stat_elemental_damage", 0.8 ] ]\n'
+                 'bounce = 3\nbounce_dmg_reduction = 0.0\n')
+    rec = build_weapon_record(LIGHTNING_HOST, DATA, [_projectile_effect()],
+                              [{"weapon_stats": companion}],
+                              weapon_id="w", name="W", tier=1)
+    assert math.isclose(rec["proc_dps_at_zero_rd"], 30.7692, rel_tol=1e-4)
+
+
+def test_weapon_record_targeted_can_bounce_false_forces_single_hit():
+    # can_bounce=false zeroes the chain even with bounce=3 and lossy reduction
+    companion = ('[gd_resource type="Resource" format=2]\n[resource]\n'
+                 'damage = 5\nscaling_stats = [ [ "stat_elemental_damage", 0.8 ] ]\n'
+                 'bounce = 3\nbounce_dmg_reduction = 0.5\ncan_bounce = false\n')
+    rec = build_weapon_record(LIGHTNING_HOST, DATA, [_projectile_effect()],
+                              [{"weapon_stats": companion}],
+                              weapon_id="w", name="W", tier=1)
+    # forced bounce=0 passes the gate; 5 dmg * 1 spawn * 1 enemy / 0.65s
+    assert math.isclose(rec["proc_dps_at_zero_rd"], 7.6923, rel_tol=1e-4)
+    assert rec["unmodeled_effects"] == []
+
+
+def test_weapon_record_companion_omitting_bounce_fields_uses_engine_defaults():
+    # bounce/bounce_dmg_reduction/can_bounce all absent -> bounce defaults 0;
+    # the 0.5 reduction default is irrelevant at bounce 0; models one hit
+    companion = ('[gd_resource type="Resource" format=2]\n[resource]\n'
+                 'damage = 5\nscaling_stats = [ [ "stat_elemental_damage", 0.8 ] ]\n')
+    rec = build_weapon_record(LIGHTNING_HOST, DATA, [_projectile_effect()],
+                              [{"weapon_stats": companion}],
+                              weapon_id="w", name="W", tier=1)
+    assert math.isclose(rec["proc_dps_at_zero_rd"], 7.6923, rel_tol=1e-4)
+    assert rec["unmodeled_effects"] == []
