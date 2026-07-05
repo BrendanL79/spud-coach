@@ -95,6 +95,30 @@ def build_weapon_record(stats_text: str, data_text: str,
                 proc_slope += ps
             elif eff.get("key"):
                 unmodeled.append(str(eff["key"]))
+        elif source == "companion_ranged_stats":
+            ws = eff.get("weapon_stats") or {}
+            damage = ws.get("damage")
+            count = float(eff.get("value", 0))
+            bounce = int(ws.get("bounce", 0)) if bool(ws.get("can_bounce", True)) else 0
+            ok = damage is not None and count > 0
+            if bool(eff.get("auto_target_enemy", False)):
+                # Targeted chain: assume the nominal chain fully connects.
+                # No decaying-bounce math exists — lossy bounces fall back.
+                ok = ok and (bounce == 0 or float(ws.get("bounce_dmg_reduction", 0.5)) == 0.0)
+                enemies_hit = 1.0 + bounce
+            else:
+                # Untargeted spray: one expected hit per volley (documented
+                # assumption, exploding default_enemies_hit precedent).
+                ok = ok and bounce == 0
+                enemies_hit = 1.0
+            if ok:
+                p0, ps = calc.companion_dps_line(
+                    float(damage), _rd_coefficient(ws.get("scaling_stats") or []),
+                    ct, count, enemies_hit)
+                proc0 += p0
+                proc_slope += ps
+            elif eff.get("key"):
+                unmodeled.append(str(eff["key"]))
         elif eff.get("key"):
             unmodeled.append(str(eff["key"]))
 

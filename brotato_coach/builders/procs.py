@@ -13,6 +13,8 @@ Model schema, keyed by effect `key`:
     default_enemies_hit: assumed average enemies caught per proc (AoE). The
         softest number in the model; answers surface it as an assumption and
         let callers override it.
+    damage_source: "companion_ranged_stats" — spawn-projectiles-on-hit; the
+        proc's own damage line lives on the effect's weapon_stats companion.
 """
 
 from __future__ import annotations
@@ -51,9 +53,30 @@ _BURN_MODEL = {
     "tick_interval": 0.5,
 }
 
+# Companion-projectile procs (ProjectilesOnHitEffect): every landed host hit
+# unconditionally spawns `value` projectiles (no chance roll — value is a
+# count) whose damage/crit/scaling live on a companion RangedWeaponStats
+# resource (`weapon_stats = ExtResource(N)` on the effect .tres). One script
+# class serves four keys, so all four share this model (same pattern as the
+# exploding trio). Evidence: docs/proc-mechanics.md "Companion-projectile
+# procs" + research dossiers 2026-07-05-family-{lightning,projectiles-on-hit,
+# slows-cc}.md. The enemies-hit policy and precondition gates live in
+# builders/weapons.py: targeted chains (auto_target_enemy=true) count
+# 1+bounce, gated on lossless bounce; untargeted sprays count 1.0 per volley,
+# gated on bounce==0 — the 1.0 is an assumption constant per the exploding
+# model's default_enemies_hit precedent (optimistic vs. a lone enemy, where
+# the true value is 0 — the spawn excludes the enemy that triggered it).
+_COMPANION_PROJECTILE_MODEL = {
+    "damage_source": "companion_ranged_stats",
+}
+
 PROC_MODELS: dict[str, dict] = {
     "effect_explode_custom": _EXPLODE_MODEL,
     "effect_explode": _EXPLODE_MODEL,
     "effect_explode_melee": _EXPLODE_MODEL,
     "effect_burning": _BURN_MODEL,
+    "effect_lightning_on_hit": _COMPANION_PROJECTILE_MODEL,
+    "effect_projectiles_on_hit": _COMPANION_PROJECTILE_MODEL,
+    "EFFECT_PROJECTILES_ON_HIT": _COMPANION_PROJECTILE_MODEL,
+    "EFFECT_SLOW_PROJECTILES_ON_HIT": _COMPANION_PROJECTILE_MODEL,
 }

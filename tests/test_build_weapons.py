@@ -287,3 +287,78 @@ def test_weapon_effect_record_nests_weapon_stats_companion():
                               weapon_id="w", name="W", tier=1)
     ws = rec["effects"][0]["weapon_stats"]
     assert ws["damage"] == 5 and ws["bounce"] == 0
+
+
+def _projectile_effect(key="effect_lightning_on_hit", value=1, auto_target="true"):
+    return ('[gd_resource type="Resource" format=2]\n'
+            '[ext_resource path="res://effects/weapons/projectiles_on_hit_effect.gd" type="Script" id=1]\n'
+            '[resource]\nscript = ExtResource( 1 )\n'
+            f'key = "{key}"\nvalue = {value}\nauto_target_enemy = {auto_target}\n')
+
+
+def _companion_stats(damage=5, scaling='[ [ "stat_elemental_damage", 0.8 ] ]',
+                     bounce=0, bounce_dmg_reduction=0.0, can_bounce="true"):
+    return ('[gd_resource type="Resource" format=2]\n[resource]\n'
+            f'damage = {damage}\nscaling_stats = {scaling}\n'
+            f'bounce = {bounce}\nbounce_dmg_reduction = {bounce_dmg_reduction}\n'
+            f'can_bounce = {can_bounce}\n')
+
+
+# Host: cooldown 27, recoil 0.1 -> cycle_time 0.65s (lightning_shiv T1)
+LIGHTNING_HOST = ('[gd_resource type="Resource" format=2]\n[resource]\n'
+                  'cooldown = 27\ndamage = 5\naccuracy = 1.0\nrecoil_duration = 0.1\n'
+                  'scaling_stats = [ [ "stat_melee_damage", 1.0 ] ]\n')
+
+
+def test_weapon_record_targeted_companion_proc_counts_chain():
+    # bounce 3 (lightning_shiv T4-style chain) -> enemies_hit 1+3
+    rec = build_weapon_record(LIGHTNING_HOST, DATA, [_projectile_effect()],
+                              [{"weapon_stats": _companion_stats(bounce=3)}],
+                              weapon_id="w", name="W", tier=1)
+    # 5 dmg * 1 spawn * 4 enemies / 0.65s
+    assert math.isclose(rec["proc_dps_at_zero_rd"], 30.7692, rel_tol=1e-4)
+    assert rec["proc_dps_slope_per_rd"] == 0.0
+    assert rec["unmodeled_effects"] == []
+
+
+def test_weapon_record_targeted_falls_back_on_lossy_bounce():
+    rec = build_weapon_record(
+        LIGHTNING_HOST, DATA, [_projectile_effect()],
+        [{"weapon_stats": _companion_stats(bounce=2, bounce_dmg_reduction=0.5)}],
+        weapon_id="w", name="W", tier=1)
+    assert rec["proc_dps_at_zero_rd"] == 0.0
+    assert rec["unmodeled_effects"] == ["effect_lightning_on_hit"]
+
+
+def test_weapon_record_spray_companion_proc_has_rd_slope():
+    # cactus_mace T1: 3 spawns, damage 1, stat_ranged_damage 0.6, host ct 1.25s
+    host = ('[gd_resource type="Resource" format=2]\n[resource]\n'
+            'cooldown = 63\ndamage = 15\naccuracy = 1.0\nrecoil_duration = 0.1\n'
+            'scaling_stats = [ [ "stat_melee_damage", 0.8 ] ]\n')
+    rec = build_weapon_record(
+        host, DATA,
+        [_projectile_effect(key="effect_projectiles_on_hit", value=3, auto_target="false")],
+        [{"weapon_stats": _companion_stats(
+            damage=1, scaling='[ [ "stat_ranged_damage", 0.6 ] ]',
+            bounce=0, bounce_dmg_reduction=0.5)}],
+        weapon_id="w", name="W", tier=1)
+    assert math.isclose(rec["proc_dps_at_zero_rd"], 2.4, rel_tol=1e-6)
+    assert math.isclose(rec["proc_dps_slope_per_rd"], 1.44, rel_tol=1e-6)
+    assert rec["unmodeled_effects"] == []
+
+
+def test_weapon_record_spray_falls_back_when_bouncing():
+    rec = build_weapon_record(
+        LIGHTNING_HOST, DATA,
+        [_projectile_effect(key="EFFECT_PROJECTILES_ON_HIT", value=8, auto_target="false")],
+        [{"weapon_stats": _companion_stats(bounce=1, bounce_dmg_reduction=0.5)}],
+        weapon_id="w", name="W", tier=3)
+    assert rec["proc_dps_at_zero_rd"] == 0.0
+    assert rec["unmodeled_effects"] == ["EFFECT_PROJECTILES_ON_HIT"]
+
+
+def test_weapon_record_companion_proc_falls_back_without_companion():
+    rec = build_weapon_record(LIGHTNING_HOST, DATA, [_projectile_effect()],
+                              weapon_id="w", name="W", tier=1)
+    assert rec["proc_dps_at_zero_rd"] == 0.0
+    assert rec["unmodeled_effects"] == ["effect_lightning_on_hit"]
