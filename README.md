@@ -32,8 +32,7 @@ Build the dataset (needs a local extraction — see [Building the dataset](#buil
 then start the server:
 
 ```bash
-uv run python build_dataset.py --game-version 1.1.15.4 \
-    --generated-at $(date -u +%Y-%m-%dT%H:%M:%SZ)     # writes data/brotato.json
+uv run python build_dataset.py                        # writes data/brotato.json
 uv run python -m brotato_coach.server                 # starts the MCP server over stdio
 ```
 
@@ -52,9 +51,10 @@ uvx spudcoach --data /path/to/brotato.json
 ```
 
 The dataset is never distributed — build your own from your Brotato install:
-`uv run python build_dataset.py --game-version <ver> --generated-at <iso8601>`
-(see [docs/extraction-setup.md](docs/extraction-setup.md)). `SPUDCOACH_DATA` works as an env-var alternative
-to `--data`.
+`uv run python build_dataset.py` (see [docs/extraction-setup.md](docs/extraction-setup.md)).
+Game version auto-detects from the decompiled `recovered/singletons/progress_data.gd`, and
+`generated_at` defaults to the current UTC time — pass `--game-version`/`--generated-at`
+explicitly to override either. `SPUDCOACH_DATA` works as an env-var alternative to `--data`.
 
 ## Use as a Claude Code plugin
 
@@ -204,25 +204,16 @@ The dataset is **not committed** — it is built from an extraction of a real ga
 `data/brotato.json` are all gitignored (see [`docs/extraction-setup.md`](docs/extraction-setup.md)
 for how the extraction is produced). Once `extracted/` is present at the repo root:
 
-macOS / Linux (bash):
-
 ```bash
-uv run python build_dataset.py \
-    --game-version 1.1.15.4 \
-    --generated-at $(date -u +%Y-%m-%dT%H:%M:%SZ)
+uv run python build_dataset.py
 ```
 
-Windows (PowerShell):
-
-```powershell
-uv run python build_dataset.py `
-    --game-version 1.1.15.4 `
-    --generated-at (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-```
-
-This writes `data/brotato.json`. Supply the actual installed Brotato version to `--game-version`
-(it is not recorded inside the `.pck`; check the Steam client). Re-run after each patch to refresh
-your local copy — it stays gitignored, so don't commit it.
+This writes `data/brotato.json`. Game version auto-detects from the decompiled
+`recovered/singletons/progress_data.gd` (its `VERSION` constant), and `generated_at` defaults to
+the current UTC time. Pass `--game-version <ver>` or `--generated-at <iso8601>` explicitly to
+override either — e.g. if `recovered/` isn't present, or to pin a reproducible value for a test
+or release script. Re-run after each patch to refresh your local copy — it stays gitignored, so
+don't commit it.
 
 ## How it works
 

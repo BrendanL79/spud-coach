@@ -1,8 +1,12 @@
 """Distill extracted/ .tres game data into data/brotato.json.
 
 Usage:
-    python build_dataset.py --extracted extracted --out data/brotato.json \
-        --game-version 1.1.0.0 --generated-at 2026-07-01T00:00:00Z
+    python build_dataset.py --extracted extracted --out data/brotato.json
+
+--game-version and --generated-at are both optional: game version auto-detects from
+--version-file (default recovered/singletons/progress_data.gd), and generated_at defaults
+to the current UTC time. Pass either explicitly to override, e.g. for a pinned/reproducible
+build.
 """
 
 from __future__ import annotations
@@ -11,6 +15,7 @@ import argparse
 import json
 import os
 import sys
+from datetime import datetime, timezone
 
 from brotato_coach import dataset
 from brotato_coach.builders import discover
@@ -19,6 +24,8 @@ from brotato_coach.builders.items import build_item_record
 from brotato_coach.builders.characters import build_character_record
 from brotato_coach.builders.sets import build_set_record
 from brotato_coach.builders.localization import parse_translations_csv
+from brotato_coach.builders.version import parse_game_version
+from brotato_coach.builders.timestamps import format_generated_at
 from brotato_coach.tres import parse_tres
 
 
@@ -31,13 +38,35 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--extracted", default="extracted")
     parser.add_argument("--out", default="data/brotato.json")
-    parser.add_argument("--game-version", required=True)
-    parser.add_argument("--generated-at", required=True)
+    parser.add_argument(
+        "--game-version", default=None,
+        help="override the auto-detected version; auto-detected from --version-file if omitted")
+    parser.add_argument(
+        "--generated-at", default=None,
+        help="override the build timestamp; defaults to the current UTC time if omitted")
+    parser.add_argument(
+        "--version-file",
+        default="recovered/singletons/progress_data.gd",
+        help="decompiled Godot singleton providing the VERSION constant; "
+             "used when --game-version is omitted")
     parser.add_argument(
         "--translations",
         default="recovered/.assets/resources/translations/translations.csv",
         help="decompiled Godot translations CSV; skipped if absent")
     args = parser.parse_args(argv)
+
+    game_version = args.game_version
+    if game_version is None:
+        if os.path.isfile(args.version_file):
+            game_version = parse_game_version(_read(args.version_file))
+        if game_version is None:
+            parser.error(
+                f"could not detect game version from {args.version_file}; "
+                "pass --game-version explicitly")
+
+    generated_at = args.generated_at
+    if generated_at is None:
+        generated_at = format_generated_at(datetime.now(timezone.utc))
 
     tr: dict[str, str] = {}
     if os.path.isfile(args.translations):
@@ -76,7 +105,7 @@ def main(argv=None) -> int:
             set_id=e["set_id"], name=e["name"], tr=tr))
 
     ds = dataset.assemble_dataset(
-        game_version=args.game_version, generated_at=args.generated_at,
+        game_version=game_version, generated_at=generated_at,
         weapons=weapons, items=items, characters=characters, sets=sets)
 
     problems = dataset.validate_dataset(ds)
