@@ -25,23 +25,22 @@ the existing "Install" section and **before** the footer. All reuse existing CSS
 
 A short explainer plus the `build_dataset.py` command, expanding on the one-line caveat already
 in the Install section above it (that caveat is unchanged — see Out of scope). Sourced from
-`README.md`'s "Building the dataset" section (lines 200-225).
+`README.md`'s "Building the dataset" section.
 
-The page shows the **PowerShell** form (most Brotato players are on Windows) and links out to
-the README for the Bash/macOS/Linux equivalent, rather than showing both inline.
+**Updated 2026-07-05:** `build_dataset.py` now auto-detects the game version from the decompiled
+`recovered/singletons/progress_data.gd` and defaults `generated_at` to the current UTC time (see
+`docs/superpowers/plans/2026-07-05-auto-detect-game-version.md`) — both were previously required
+flags needing a shell-specific date substitution, which is why an earlier draft of this section
+showed a PowerShell-only command with a `<your-installed-version>` placeholder and a Bash-README
+link. Neither is needed anymore: one identical bare command works on every platform, so there's
+no Bash-vs-PowerShell split to make here at all.
 
 ```html
 <h2>Build your dataset</h2>
 <p>The game's data files are copyrighted, so nothing pre-built ships with Spud Coach — you generate <code>data/brotato.json</code> yourself, once, from your own Brotato install.</p>
-<pre class="install-code"><code>uv run python build_dataset.py `
-    --game-version &lt;your-installed-version&gt; `
-    --generated-at (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")</code></pre>
-<p class="caveat">Needs a local extraction first — see <a href="https://github.com/BrendanL79/spud-coach/blob/main/docs/extraction-setup.md">extraction-setup.md</a>. Re-run after each game patch (check your installed version in the Steam client — it isn't recorded in the game files). On macOS/Linux, see the <a href="https://github.com/BrendanL79/spud-coach#building-the-dataset">README</a> for the Bash form.</p>
+<pre class="install-code"><code>uv run python build_dataset.py</code></pre>
+<p class="caveat">Needs a local extraction first — see <a href="https://github.com/BrendanL79/spud-coach/blob/main/docs/extraction-setup.md">extraction-setup.md</a>. Game version and build timestamp are auto-detected; re-run after each game patch to refresh your local copy.</p>
 ```
-
-The `--game-version` value is a placeholder (`<your-installed-version>`), not a hardcoded
-version string — the README's own example hardcodes `1.1.15.4`, but that goes stale as Brotato
-patches; a public landing page command shouldn't imply a fixed version is always correct.
 
 ### Section 4: "Connect it to Claude"
 
@@ -167,7 +166,7 @@ main
   Section: What it is (unchanged)
   Section: Install (unchanged)
   Section: Build your dataset (NEW)
-    p explainer + code block (PowerShell) + caveat
+    p explainer + code block (bare command, no flags) + caveat
   Section: Connect it to Claude (NEW)
     h3 Claude Code + code block
     h3 Claude Desktop + code block + caveat
