@@ -82,3 +82,24 @@ def test_burn_dps_line_zero_damage():
     dps0, slope = calc.burn_dps_line(0.0)
     assert dps0 == 0.0
     assert slope == 0.0
+
+
+def test_companion_dps_line_lightning_shiv_t1_golden():
+    # companion damage 5, elemental scaling (rd_coef 0), host cycle 0.65s,
+    # 1 spawn, chain of 1 (bounce 0)
+    dps0, slope = calc.companion_dps_line(5.0, 0.0, 0.65, 1.0, 1.0)
+    assert math.isclose(dps0, 7.6923, rel_tol=1e-4)
+    assert slope == 0.0
+
+
+def test_companion_dps_line_cactus_mace_t1_golden():
+    # companion damage 1, stat_ranged_damage 0.6, host cycle 1.25s,
+    # 3 spawns per hit, spray assumption 1.0
+    dps0, slope = calc.companion_dps_line(1.0, 0.6, 1.25, 3.0, 1.0)
+    assert math.isclose(dps0, 2.4)
+    assert math.isclose(slope, 1.44)
+
+
+def test_companion_dps_line_zero_count_is_zero():
+    dps0, slope = calc.companion_dps_line(10.0, 1.0, 1.0, 0.0, 1.0)
+    assert dps0 == 0.0 and slope == 0.0

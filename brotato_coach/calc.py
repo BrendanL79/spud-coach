@@ -57,6 +57,20 @@ def burn_dps_line(damage_per_tick: float, tick_interval: float = 0.5) -> tuple[f
     return (damage_per_tick / tick_interval, 0.0)
 
 
+def companion_dps_line(damage: float, rd_coef: float, host_cycle_time: float,
+                       count: float, enemies_hit: float) -> tuple[float, float]:
+    """Expected DPS line from a spawn-projectiles-on-hit proc.
+
+    Each landed host hit unconditionally spawns `count` projectiles whose
+    damage line lives on a companion RangedWeaponStats resource, independent
+    of the host weapon's own damage (see docs/proc-mechanics.md,
+    "Companion-projectile procs"). `enemies_hit` is the assumed expected hits
+    per volley/chain — an assumption constant, like proc_line's enemies_hit.
+    """
+    f = count * enemies_hit / host_cycle_time
+    return (damage * f, rd_coef * f)
+
+
 def compare_lines(line_a: tuple[float, float], line_b: tuple[float, float],
                   rd_min: float = 0.0, rd_max: float = 100.0) -> dict:
     a0, as_ = line_a
