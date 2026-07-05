@@ -182,7 +182,7 @@ BURNING_DATA = ('[gd_resource type="Resource" format=2]\n[resource]\n'
 
 
 def test_weapon_record_merges_burning_data_companion():
-    rec = build_weapon_record(STATS, DATA, [BURNING_EFFECT], [BURNING_DATA],
+    rec = build_weapon_record(STATS, DATA, [BURNING_EFFECT], [{"burning_data": BURNING_DATA}],
                               weapon_id="w", name="W", tier=1)
     e = rec["effects"][0]
     assert e["key"] == "effect_burning"
@@ -213,7 +213,7 @@ def test_weapon_record_burn_dot_contributes_when_preconditions_hold():
     stats = ('[gd_resource type="Resource" format=2]\n[resource]\n'
              'cooldown = 31\ndamage = 5\naccuracy = 1.0\nrecoil_duration = 0.1\n'
              'scaling_stats = [ [ "stat_melee_damage", 1.0 ] ]\n')
-    rec = build_weapon_record(stats, DATA, [BURNING_EFFECT], [_burning_data()],
+    rec = build_weapon_record(stats, DATA, [BURNING_EFFECT], [{"burning_data": _burning_data()}],
                               weapon_id="w", name="W", tier=1)
     assert math.isclose(rec["proc_dps_at_zero_rd"], 6.0)  # 3 damage / 0.5s
     assert rec["proc_dps_slope_per_rd"] == 0.0
@@ -225,7 +225,7 @@ def test_weapon_record_burn_dot_falls_back_when_cycle_time_exceeds_window():
     stats = ('[gd_resource type="Resource" format=2]\n[resource]\n'
              'cooldown = 600\ndamage = 5\naccuracy = 1.0\nrecoil_duration = 0.1\n'
              'scaling_stats = [ [ "stat_melee_damage", 1.0 ] ]\n')
-    rec = build_weapon_record(stats, DATA, [BURNING_EFFECT], [_burning_data()],
+    rec = build_weapon_record(stats, DATA, [BURNING_EFFECT], [{"burning_data": _burning_data()}],
                               weapon_id="w", name="W", tier=1)
     assert rec["proc_dps_at_zero_rd"] == 0.0
     assert rec["unmodeled_effects"] == ["effect_burning"]
@@ -233,7 +233,7 @@ def test_weapon_record_burn_dot_falls_back_when_cycle_time_exceeds_window():
 
 def test_weapon_record_burn_dot_falls_back_when_chance_below_one():
     rec = build_weapon_record(STATS, DATA, [BURNING_EFFECT],
-                              [_burning_data(chance=0.5)],
+                              [{"burning_data": _burning_data(chance=0.5)}],
                               weapon_id="w", name="W", tier=1)
     assert rec["proc_dps_at_zero_rd"] == 0.0
     assert rec["unmodeled_effects"] == ["effect_burning"]
@@ -260,8 +260,30 @@ def test_weapon_record_burn_dot_falls_back_when_damage_missing():
     stats = ('[gd_resource type="Resource" format=2]\n[resource]\n'
              'cooldown = 31\ndamage = 5\naccuracy = 1.0\nrecoil_duration = 0.1\n'
              'scaling_stats = [ [ "stat_melee_damage", 1.0 ] ]\n')
-    rec = build_weapon_record(stats, DATA, [BURNING_EFFECT], [burning_data_no_damage],
+    rec = build_weapon_record(stats, DATA, [BURNING_EFFECT], [{"burning_data": burning_data_no_damage}],
                               weapon_id="w", name="W", tier=1)
     assert rec["proc_dps_at_zero_rd"] == 0.0
     assert rec["proc_dps_slope_per_rd"] == 0.0
     assert rec["unmodeled_effects"] == ["effect_burning"]
+
+
+def test_weapon_effect_record_carries_script_basename():
+    effect = ('[gd_resource type="Resource" format=2]\n'
+              '[ext_resource path="res://effects/weapons/one_shot_on_hit_effect.gd" type="Script" id=1]\n'
+              '[resource]\nscript = ExtResource( 1 )\nkey = ""\nvalue = 1\n')
+    rec = build_weapon_record(STATS, DATA, [effect], weapon_id="w", name="W", tier=2)
+    assert rec["effects"][0]["script"] == "one_shot_on_hit_effect.gd"
+
+
+def test_weapon_effect_record_nests_weapon_stats_companion():
+    effect = ('[gd_resource type="Resource" format=2]\n'
+              '[ext_resource path="res://effects/weapons/projectiles_on_hit_effect.gd" type="Script" id=1]\n'
+              '[resource]\nscript = ExtResource( 1 )\nkey = "effect_lightning_on_hit"\n'
+              'value = 1\nauto_target_enemy = true\n')
+    companion = ('[gd_resource type="Resource" format=2]\n[resource]\n'
+                 'damage = 5\nbounce = 0\nbounce_dmg_reduction = 0.0\ncan_bounce = true\n'
+                 'scaling_stats = [ [ "stat_elemental_damage", 0.8 ] ]\n')
+    rec = build_weapon_record(STATS, DATA, [effect], [{"weapon_stats": companion}],
+                              weapon_id="w", name="W", tier=1)
+    ws = rec["effects"][0]["weapon_stats"]
+    assert ws["damage"] == 5 and ws["bounce"] == 0

@@ -13,30 +13,39 @@ def _rd_coefficient(scaling_stats: list) -> float:
     return 0.0
 
 
-def _weapon_effect_record(text: str, extra_text: str | None = None) -> dict:
+def _weapon_effect_record(text: str, companion_texts: dict[str, str] | None = None) -> dict:
     """A weapon's on-hit effect as plain scalar fields.
 
     Drops nested resource references (script, explosion_scene, …) and keeps the
     gameplay scalars — e.g. the Shredder's `key="effect_explode_custom"` with
-    `chance=0.5`. Some effects (e.g. burning) keep their real numbers on a
-    separate companion resource instead of inline; when `extra_text` is given
-    (that companion file's raw text), its scalar fields are nested under
-    `burning_data` rather than flattened, since both files carry unrelated
-    same-named boilerplate fields (e.g. `value`).
+    `chance=0.5`. The script ext_resource's basename is kept as `script`, since
+    the engine dispatches many effects on script class (and blank-key effects
+    have nothing else identifying them). Some effects keep their real numbers
+    on companion resources instead of inline (burning_data / weapon_stats /
+    stats); each given companion's scalar fields nest under its own field name
+    rather than flattening, since the files carry unrelated same-named
+    boilerplate (e.g. `value`).
     """
-    r = parse_tres(text).resource
+    doc = parse_tres(text)
+    r = doc.resource
     record = {k: v for k, v in r.items()
               if not (isinstance(v, dict) and ("__ext__" in v or "__sub__" in v))}
-    if extra_text is not None:
+    script_ref = r.get("script")
+    if isinstance(script_ref, dict) and "__ext__" in script_ref:
+        ext = doc.ext_resources.get(script_ref["__ext__"]) or {}
+        script_path = str(ext.get("path", ""))
+        if script_path:
+            record["script"] = script_path.rsplit("/", 1)[-1]
+    for field, extra_text in (companion_texts or {}).items():
         extra = parse_tres(extra_text).resource
-        record["burning_data"] = {k: v for k, v in extra.items()
-                                  if not (isinstance(v, dict) and ("__ext__" in v or "__sub__" in v))}
+        record[field] = {k: v for k, v in extra.items()
+                        if not (isinstance(v, dict) and ("__ext__" in v or "__sub__" in v))}
     return record
 
 
 def build_weapon_record(stats_text: str, data_text: str,
                         effect_texts: list[str] | None = None,
-                        effect_extra_texts: list[str | None] | None = None, *,
+                        effect_companion_texts: list[dict[str, str] | None] | None = None, *,
                         weapon_id: str, name: str, tier: int,
                         classes: list[str] | None = None,
                         proc_models: dict | None = None,
@@ -59,9 +68,9 @@ def build_weapon_record(stats_text: str, data_text: str,
     ct = calc.cycle_time(recoil_duration, cooldown, burst=burst)
     dps0, slope = calc.dps_line(base_damage, _rd_coefficient(scaling_stats), ct, accuracy)
 
-    extras = effect_extra_texts or [None] * len(effect_texts or [])
-    effects = [_weapon_effect_record(t, e)
-               for t, e in zip(effect_texts or [], extras, strict=True)]
+    companions = effect_companion_texts or [None] * len(effect_texts or [])
+    effects = [_weapon_effect_record(t, c)
+               for t, c in zip(effect_texts or [], companions, strict=True)]
     models = PROC_MODELS if proc_models is None else proc_models
     proc0 = proc_slope = 0.0
     unmodeled: list[str] = []
