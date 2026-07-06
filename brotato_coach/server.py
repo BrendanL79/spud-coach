@@ -6,7 +6,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from brotato_coach import answers, dataset, evaluate, orientation, query, runfile
+from brotato_coach import answers, bestiary, dataset, evaluate, orientation, query, runfile
 from brotato_coach.schemas import Stats
 
 
@@ -214,14 +214,49 @@ def build_server(ds: dict) -> FastMCP:
             current_stats=current_stats.as_dict())
 
     @mcp.tool()
+    def get_enemy(name: str, wave: int | None = None) -> dict[str, Any]:
+        """Look up one enemy's record: base stats, per-wave stat slopes, attack
+        profile, and ability tags.
+
+        Enemy HP/damage/armor scale with the wave. Omit `wave` for base stats +
+        slopes; pass `wave` (1-20) to also get `effective` stats resolved at that
+        wave (speed is returned as a min-max range). On a miss: not_found +
+        did_you_mean. Base-game (Crash Zone) roster.
+        """
+        return _safe(bestiary.get_enemy)(ds=ds, name=name, wave=wave)
+
+    @mcp.tool()
+    def list_enemies(appears_in: str | None = None, ability: str | None = None,
+                     attack_kind: str | None = None) -> dict[str, Any]:
+        """List enemy summaries, optionally filtered by `appears_in`
+        (e.g. 'normal'), `ability` (e.g. 'charger', 'spawner'), or `attack_kind`
+        ('melee', 'ranged', 'charging'). Call get_filter_options for valid
+        values."""
+        return _safe(lambda **kw: {"enemies": bestiary.list_enemies(ds, **kw)})(
+            appears_in=appears_in, ability=ability, attack_kind=attack_kind)
+
+    @mcp.tool()
+    def wave_composition(wave: int, danger: int | None = None) -> dict[str, Any]:
+        """Base-game composition for a Crash Zone wave (1-20): the enemy groups
+        that spawn, their base counts, first-spawn timing, and repeats.
+
+        `base_enemies` counts are pre-modifier base values; `scales_with` lists
+        the run modifiers that change realized counts; `elite_horde` is labelled
+        as per-run randomized (never guaranteed). Pass `danger` (displayed Danger
+        number) to filter to the groups that danger tier admits.
+        """
+        return _safe(bestiary.wave_composition)(ds=ds, wave=wave, danger=danger)
+
+    @mcp.tool()
     def get_filter_options() -> dict[str, Any]:
         """List the valid filter values in the loaded dataset so you filter with
         exact, case-sensitive values.
 
         Returns the item tags, item archetypes, scaling stats (item and weapon),
-        available tiers, and the weapon-class names for get_weapon_class_set. Call
-        this before list_items / list_weapons / get_weapon_class_set rather than
-        guessing values.
+        available tiers, the weapon-class names for get_weapon_class_set, and the
+        enemy abilities / attack kinds / appears_in zones for list_enemies. Call
+        this before list_items / list_weapons / get_weapon_class_set / list_enemies
+        rather than guessing values.
         """
         def _uniq(vals) -> list:
             return sorted({v for v in vals if v})
@@ -239,6 +274,12 @@ def build_server(ds: dict) -> FastMCP:
                 "tiers": sorted({x.get("tier") for x in [*weapons, *items]
                                  if x.get("tier") is not None}),
                 "weapon_classes": _uniq(s.get("name") or s.get("id") for s in ds.get("sets", [])),
+                "enemy_abilities": _uniq(a for e in ds.get("enemies", [])
+                                         for a in e.get("abilities", [])),
+                "attack_kinds": _uniq(e.get("attack", {}).get("kind")
+                                      for e in ds.get("enemies", [])),
+                "enemy_appears_in": _uniq(a for e in ds.get("enemies", [])
+                                          for a in e.get("appears_in", [])),
             }
         return _safe(_compute)()
 
