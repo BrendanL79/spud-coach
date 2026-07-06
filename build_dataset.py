@@ -24,6 +24,8 @@ from brotato_coach.builders.weapons import build_weapon_record
 from brotato_coach.builders.items import build_item_record
 from brotato_coach.builders.characters import build_character_record
 from brotato_coach.builders.sets import build_set_record
+from brotato_coach.builders.enemies import build_enemy_record
+from brotato_coach.builders.waves import build_wave_record
 from brotato_coach.builders.localization import parse_translations_csv
 from brotato_coach.builders.version import parse_game_version
 from brotato_coach.builders.timestamps import format_generated_at
@@ -135,9 +137,36 @@ def main(argv=None) -> int:
         for e in discover.find_set_dirs(args.extracted)
     ]
 
+    enemies = []
+    for e in discover.find_enemy_dirs(args.extracted):
+        scene_text = _read(e["scene_path"]) if e.get("scene_path") else None
+        enemies.append(build_enemy_record(
+            _read(e["stats_path"]), scene_text,
+            enemy_id=e["enemy_id"], name=e["name"], tr=tr))
+
+    zone_1_waves = []
+    enemy_ids_in_waves: set[str] = set()
+    for wv in discover.find_zone_waves(args.extracted):
+        group_texts = [_read(p) for p in wv["group_paths"]]
+        unit_texts_by_group = {
+            gkey: [_read(p) for p in paths]
+            for gkey, paths in wv["unit_paths_by_group"].items()
+        }
+        rec = build_wave_record(_read(wv["wave_path"]), group_texts,
+                                unit_texts_by_group, wave=wv["wave"])
+        for g in rec["groups"]:
+            if g.get("enemy_id"):
+                enemy_ids_in_waves.add(g["enemy_id"])
+        zone_1_waves.append(rec)
+
+    # appears_in: "normal" for any enemy referenced by a numbered wave
+    for e in enemies:
+        e["appears_in"] = ["normal"] if e["id"] in enemy_ids_in_waves else []
+
     ds = dataset.assemble_dataset(
         game_version=game_version, generated_at=generated_at,
-        weapons=weapons, items=items, characters=characters, sets=sets)
+        weapons=weapons, items=items, characters=characters, sets=sets,
+        enemies=enemies, zone_1_waves=zone_1_waves)
 
     problems = dataset.validate_dataset(ds)
     if problems:
@@ -152,7 +181,8 @@ def main(argv=None) -> int:
     with open(args.out, "w", encoding="utf-8") as fh:
         json.dump(ds, fh, indent=2)
     print(f"Wrote {args.out}: {len(weapons)} weapon records, {len(items)} item records, "
-          f"{len(characters)} character records, {len(sets)} set records "
+          f"{len(characters)} character records, {len(sets)} set records, "
+          f"{len(enemies)} enemy records, {len(zone_1_waves)} zone_1 wave records "
           f"({'localized' if tr else 'NO translations found — slug names only'})")
     return 0
 
