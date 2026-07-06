@@ -28,6 +28,22 @@ DS = {
             {"count": 4, "effect": {"key": "stat_range", "value": 20}}]},
     ],
     "stat_mechanics": {},
+    "enemies": [
+        {"id": "baby_alien", "name": "Baby Alien", "display_name": "Baby Alien",
+         "base": {"health": 3, "speed": 250, "speed_randomization": 50,
+                  "damage": 1, "armor": 0, "attack_cd": 30.0,
+                  "knockback_resistance": 0.0},
+         "per_wave": {"health": 2.0, "damage": 0.6, "armor": 0.0},
+         "attack": {"kind": "melee"}, "abilities": [], "appears_in": ["normal"]},
+    ],
+    "zone_1_waves": [
+        {"wave": 12, "wave_duration": 60, "max_enemies": 100, "groups": [
+            {"enemy_id": "baby_alien", "base_count": [5, 5], "first_spawn_s": 1,
+             "repeats": 5, "repeat_interval": 3, "spawn_chance": 1.0,
+             "min_danger": 0, "max_danger": 9999, "is_horde": False,
+             "is_boss": False, "is_loot": False},
+        ]},
+    ],
 }
 
 
@@ -120,3 +136,21 @@ def test_evaluate_run_bad_format_returns_structured_error():
     r = answers.evaluate_run(DS, {"nonsense": True})
     assert r["error"] == "bad_run_format"
     assert "detail" in r
+
+
+def test_evaluate_run_includes_wave_context():
+    # wave 12 is a base-game (zone_1) wave present in DS -> full wave_context
+    r = answers.evaluate_run(DS, _run(wave=12, danger=0))
+    wc = r["wave_context"]
+    assert wc["death_wave"] == 12
+    assert "per-run" in wc["elite_horde_note"].lower()
+    assert isinstance(wc["effective_threat"], list)
+
+
+def test_evaluate_run_wave_context_skip_note_outside_base_game_range():
+    # wave 25 has no zone_1_waves record (endless / outside 1-20) -> skip note
+    r = answers.evaluate_run(DS, _run(wave=25, danger=0))
+    wc = r["wave_context"]
+    assert wc["death_wave"] == 25
+    assert "note" in wc
+    assert "composition" not in wc
