@@ -46,17 +46,21 @@ damage_increase_each_wave = 0.5
 number_projectiles = 1
 '''
 
-# Boss: primary AttackBehavior is charging (id=8); an auxiliary node references
-# shooting (id=6). kind must stay "charging" (primary node wins, no collapse).
+# Boss (mantis-shaped): the primary AttackBehavior node uses shooting
+# (ext id 6, declared first); an auxiliary States AttackBehavior uses charging
+# (ext id 8, declared last). The old scan-all/last-wins classifier collapsed
+# this to "charging"; reading the primary node's own script yields "ranged".
 _BOSS_SCENE = '''[gd_scene load_steps=2 format=2]
 [ext_resource path="res://entities/units/enemies/attack_behaviors/shooting_attack_behavior.gd" type="Script" id=6]
 [ext_resource path="res://entities/units/enemies/attack_behaviors/charging_attack_behavior.gd" type="Script" id=8]
 [node name="Boss" instance=ExtResource( 1 )]
 [node name="AttackBehavior" parent="." index="7"]
-script = ExtResource( 8 )
-charge_speed = 700.0
-[node name="ChargingShootProjectilesBehavior" type="Node2D" parent="." index="8"]
 script = ExtResource( 6 )
+damage = 3
+damage_increase_each_wave = 0.5
+number_projectiles = 1
+[node name="AttackBehavior" parent="States/State1" index="1"]
+script = ExtResource( 8 )
 '''
 
 
@@ -94,8 +98,11 @@ def test_spawner_enemy_kind_and_ability():
     assert "spawner" in rec["abilities"]
 
 
-def test_boss_scene_flags_bespoke_and_keeps_primary_kind():
-    rec = build_enemy_record(_BABY_STATS, _BOSS_SCENE, enemy_id="croc", name="Croc")
-    assert rec["attack"]["kind"] == "charging"      # primary AB node wins, not collapsed
+def test_boss_scene_flags_bespoke_and_uses_primary_node_not_last_ext():
+    rec = build_enemy_record(_BABY_STATS, _BOSS_SCENE, enemy_id="mantis", name="Mantis")
+    # Primary AttackBehavior node is shooting -> ranged. The auxiliary charging
+    # node (higher ext id) must NOT win; under the old last-wins scan this was
+    # wrongly "charging".
+    assert rec["attack"]["kind"] == "ranged"
+    assert rec["attack"]["projectile_damage"] == 3
     assert "bespoke_kit_not_modeled" in rec["abilities"]
-    assert "charger" in rec["abilities"]

@@ -25,7 +25,8 @@ def _classify_attack(scene_text: str | None) -> tuple[str, list[str], dict]:
     """Return (kind, abilities, attack_params) from an enemy scene.
 
     kind derives from the primary AttackBehavior node's own script (the enemy's
-    main attack); auxiliary behavior nodes on bosses are intentionally ignored.
+    main attack); auxiliary/state behavior nodes are intentionally ignored
+    (only the primary AttackBehavior node's script is read).
     Boss scenes (root node "Boss") carry a bespoke_kit_not_modeled ability.
     No AttackBehavior node -> pure contact melee. Numeric params come from the
     AttackBehavior node only for ranged attacks.
