@@ -74,7 +74,8 @@ def test_weapon_record_populates_effects_and_classes():
     assert rec["sets"] == ["Gun", "Explosive"]
     assert len(rec["effects"]) == 1
     e = rec["effects"][0]
-    assert e["key"] == "effect_explode_custom" and e["chance"] == 0.5
+    assert e["key"] == "effect_explode_custom"
+    assert e["chance"] == 0.5
     assert "__ext__" not in str(e)  # nested resource refs (script) dropped
 
 
@@ -95,7 +96,8 @@ def test_resolve_weapon_refs_follows_effect_and_set_ext_resources(tmp_path):
         'sets = [ ExtResource( 7 ), ExtResource( 8 ) ]\n', encoding="utf-8")
     effect_paths, classes = discover._resolve_weapon_refs(str(tmp_path), str(data))
     assert classes == ["Gun", "Explosive"]
-    assert len(effect_paths) == 1 and effect_paths[0].endswith("shredder_effect.tres")
+    assert len(effect_paths) == 1
+    assert effect_paths[0].endswith("shredder_effect.tres")
 
 
 EXPLODE_EFFECT = ('[gd_resource type="Resource" format=2]\n[resource]\n'
@@ -286,7 +288,8 @@ def test_weapon_effect_record_nests_weapon_stats_companion():
     rec = build_weapon_record(STATS, DATA, [effect], [{"weapon_stats": companion}],
                               weapon_id="w", name="W", tier=1)
     ws = rec["effects"][0]["weapon_stats"]
-    assert ws["damage"] == 5 and ws["bounce"] == 0
+    assert ws["damage"] == 5
+    assert ws["bounce"] == 0
 
 
 def _projectile_effect(key="effect_lightning_on_hit", value=1, auto_target="true"):

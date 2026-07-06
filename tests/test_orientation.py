@@ -37,4 +37,5 @@ def test_primer_contains_required_sentinels():
 def test_payload_shape():
     payload = orientation.read_me_payload(FAKE_DS)
     assert set(payload) == {"primer"}
-    assert isinstance(payload["primer"], str) and len(payload["primer"]) > 2000
+    assert isinstance(payload["primer"], str)
+    assert len(payload["primer"]) > 2000

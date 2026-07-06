@@ -150,8 +150,10 @@ def evaluate_run(ds: dict, run: dict) -> dict:
 
     weapon_ids = [w["id"] for w in build["weapons"]]
     set_bonuses = loadout_set_bonuses(ds, weapon_ids)
-    for u in set_bonuses.get("unknown_weapons", []):
-        notes.append(f"unknown weapon '{u['name']}' — not in the loaded dataset")
+    notes.extend(
+        f"unknown weapon '{u['name']}' — not in the loaded dataset"
+        for u in set_bonuses.get("unknown_weapons", [])
+    )
 
     item_verdicts = []
     for item_id in build["items"]:

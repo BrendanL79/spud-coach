@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from brotato_coach import dataset
@@ -37,5 +39,5 @@ def test_validate_flags_bad_tier():
 
 
 def test_load_missing_dataset_message(tmp_path):
-    with pytest.raises(FileNotFoundError, match="build_dataset.py"):
+    with pytest.raises(FileNotFoundError, match=re.escape("build_dataset.py")):
         dataset.load_dataset(str(tmp_path / "nope.json"))

@@ -81,7 +81,8 @@ def test_evaluate_run_reports_set_progress():
     gun = {c["class"]: c for c in r["set_bonuses"]["classes"]}["Gun"]
     assert gun["count"] == 2  # SMG + Pistol
     assert gun["active"] == [{"count": 2, "effect": {"key": "stat_range", "value": 10}}]
-    assert gun["next"]["count"] == 4 and gun["next"]["needs"] == 2
+    assert gun["next"]["count"] == 4
+    assert gun["next"]["needs"] == 2
 
 
 def test_evaluate_run_gives_per_item_verdict():

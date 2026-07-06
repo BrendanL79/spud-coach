@@ -15,8 +15,7 @@ async def _call(server, tool_name, **kwargs):
     # return-type annotation carries an output schema (e.g. dict[str, Any]);
     # otherwise it returns just the unstructured content list.
     result = await server.call_tool(tool_name, kwargs)
-    structured = result[1] if isinstance(result, tuple) else result
-    return structured
+    return result[1] if isinstance(result, tuple) else result
 
 
 def test_server_registers_tools():

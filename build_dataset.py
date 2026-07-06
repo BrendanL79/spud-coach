@@ -16,7 +16,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from brotato_coach import dataset
 from brotato_coach.builders import discover
@@ -88,7 +88,7 @@ def main(argv=None) -> int:
 
     generated_at = args.generated_at
     if generated_at is None:
-        generated_at = format_generated_at(datetime.now(timezone.utc))
+        generated_at = format_generated_at(datetime.now(UTC))
 
     tr: dict[str, str] = {}
     if os.path.isfile(translations):
@@ -110,11 +110,12 @@ def main(argv=None) -> int:
             classes=entry.get("classes", []), tr=tr,
         ))
 
-    items = []
-    for e in discover.find_item_dirs(args.extracted):
-        items.append(build_item_record(
+    items = [
+        build_item_record(
             _read(e["data_path"]), [_read(p) for p in e["effect_paths"]],
-            item_id=e["item_id"], name=e["name"], tr=tr))
+            item_id=e["item_id"], name=e["name"], tr=tr)
+        for e in discover.find_item_dirs(args.extracted)
+    ]
 
     characters = []
     for e in discover.find_character_dirs(args.extracted):
@@ -126,12 +127,13 @@ def main(argv=None) -> int:
             wanted_tags=res.get("wanted_tags", []) or [],
             banned_item_groups=res.get("banned_item_groups", []) or [], tr=tr))
 
-    sets = []
-    for e in discover.find_set_dirs(args.extracted):
-        sets.append(build_set_record(
+    sets = [
+        build_set_record(
             _read(e["set_data_path"]),
             {c: _read(p) for c, p in e["count_effect_paths"].items()},
-            set_id=e["set_id"], name=e["name"], tr=tr))
+            set_id=e["set_id"], name=e["name"], tr=tr)
+        for e in discover.find_set_dirs(args.extracted)
+    ]
 
     ds = dataset.assemble_dataset(
         game_version=game_version, generated_at=generated_at,
