@@ -32,4 +32,13 @@ listing.
 
 ## Backlog (successors from shipped work)
 
-(empty — proc worklist and stat_range nuance shipped via PRs #8/#9)
+- **`read_me` orientation tool** — an MCP tool that returns a primer on the
+  game's basic mechanics and this dataset's conventions, meant to be called
+  once at the start of a session before any other tool: how stats/waves/shops
+  work at a high level, what the precomputed fields mean
+  (`dps_at_zero_rd`/`proc_dps_*` as RD-parameterized lines, `cycle_time`,
+  `classified_effects` categories), and the model's documented assumptions
+  (zero-stat baseline, `enemies_hit` constants, crit unmodeled). Source the
+  content from `docs/stat-mechanics.md`/`docs/proc-mechanics.md` distillations
+  at dataset-build time rather than hardcoding prose in the server, keeping
+  the one-way data flow.
