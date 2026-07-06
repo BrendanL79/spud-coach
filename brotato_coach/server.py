@@ -42,7 +42,7 @@ def build_server(ds: dict) -> FastMCP:
         """Look up one weapon's full record: base stats, scaling stats, and the
         precomputed DPS line (dps_at_zero_rd, dps_slope_per_rd).
 
-        Weapons exist at multiple tiers (1-6). Omit `tier` to get every tier that
+        Weapons exist at multiple tiers (1-4). Omit `tier` to get every tier that
         matches (returned as `{"matches": [...]}`); pass `tier` to pin one. On a
         miss, returns `{"error": "not_found", "did_you_mean": [...]}`.
         """
@@ -90,7 +90,7 @@ def build_server(ds: dict) -> FastMCP:
     @mcp.tool()
     def list_weapons(scaling_stat: str | None = None, tier: int | None = None) -> dict[str, Any]:
         """List weapon summaries (id, name, tier), optionally filtered by
-        `scaling_stat` (a stat the weapon scales with) and/or `tier` (1-6).
+        `scaling_stat` (a stat the weapon scales with) and/or `tier` (1-4).
         Filter values are case-sensitive; call get_filter_options first for the
         exact valid values."""
         return _safe(lambda **kw: {"weapons": query.list_weapons(ds, **kw)})(
@@ -132,7 +132,7 @@ def build_server(ds: dict) -> FastMCP:
         damage) at the SAME build stats.
 
         `names_with_tiers` is a list of [name, tier] pairs, e.g.
-        [["Minigun", 4], ["SMG", 6]]. `aoe_enemies_hit` scales proc terms for
+        [["Minigun", 4], ["SMG", 4]]. `aoe_enemies_hit` scales proc terms for
         AoE procs (default 1). Returns `{"ranking": [...]}` sorted by total DPS
         descending. Use when the player asks 'which of these hits hardest'.
         """
