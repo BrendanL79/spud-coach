@@ -19,7 +19,10 @@ Homepage = "https://spudcoach.fyi"
 Repository = "https://github.com/BrendanL79/spud-coach"
 
 [dependency-groups]
-dev = ["pytest>=8.0"]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.15.20",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
