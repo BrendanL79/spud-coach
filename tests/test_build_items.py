@@ -51,3 +51,11 @@ def test_item_record_falls_back_without_translations():
                             name="Handcuffs")
     assert rec["display_name"] == "Handcuffs"
     assert rec["effects"][0]["text"] == ""
+
+
+def test_item_tier_is_one_indexed():
+    # Raw .tres tiers are 0-indexed (0-3); records must ship the 1-indexed
+    # tier the game UI displays (I-IV), matching weapons and runfile.py.
+    rec = build_item_record(HANDCUFFS_DATA, [], item_id="item_handcuffs",
+                            name="Handcuffs")
+    assert rec["tier"] == 3  # raw `tier = 2` in the fixture

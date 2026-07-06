@@ -7,7 +7,8 @@ Two deliverables live here:
 
 ## Build & test
 - Python 3.11+, managed with **uv**. `uv sync` to set up; `uv run pytest` to test
-  (TDD is the norm — write the failing test first).
+  (TDD is the norm — write the failing test first); `uv run ruff check .` to lint
+  (ruff is a dev dependency; keep it green).
 - Build the dataset: `uv run python build_dataset.py`. `--game-version` auto-detects from
   `recovered/singletons/progress_data.gd`'s `VERSION` constant; `--generated-at` defaults to the
   current UTC time. Pass either explicitly to override (e.g. a pinned/reproducible build).

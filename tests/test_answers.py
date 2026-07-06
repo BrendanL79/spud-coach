@@ -139,7 +139,8 @@ def test_loadout_set_bonuses_counts_duplicates_and_reports_next():
     gun = by_class["Gun"]  # SMG x2 + Pistol = 3
     assert gun["count"] == 3
     assert gun["active"] == [{"count": 2, "effect": {"key": "stat_range", "value": 10}}]
-    assert gun["next"]["count"] == 4 and gun["next"]["needs"] == 1
+    assert gun["next"]["count"] == 4
+    assert gun["next"]["needs"] == 1
 
 
 def test_loadout_set_bonuses_maxed_class_has_no_next():

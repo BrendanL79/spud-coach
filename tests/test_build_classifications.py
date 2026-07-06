@@ -103,4 +103,5 @@ def test_all_categories_in_vocabulary():
     ]
     for s in samples:
         entry = classify_effect(s)
-        assert entry is not None and entry["category"] in CATEGORIES, s
+        assert entry is not None, s
+        assert entry["category"] in CATEGORIES, s

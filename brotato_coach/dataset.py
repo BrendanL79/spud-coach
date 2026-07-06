@@ -4,7 +4,7 @@ import json
 
 from brotato_coach.builders.mechanics import STAT_MECHANICS
 
-DATASET_VERSION = 2
+DATASET_VERSION = 3
 
 _REQUIRED_WEAPON_KEYS = ("id", "name", "tier", "dps_slope_per_rd", "dps_at_zero_rd")
 
@@ -24,16 +24,15 @@ def assemble_dataset(*, game_version: str, generated_at: str, weapons: list,
 
 
 def validate_dataset(dataset: dict) -> list[str]:
-    problems: list[str] = []
-    for key in ("schema_version", "game_version", "weapons", "items", "characters", "sets"):
-        if key not in dataset:
-            problems.append(f"missing top-level key: {key}")
+    problems: list[str] = [
+        f"missing top-level key: {key}"
+        for key in ("schema_version", "game_version", "weapons", "items", "characters", "sets")
+        if key not in dataset
+    ]
 
     for w in dataset.get("weapons", []):
         wid = w.get("id", "<unknown>")
-        for k in _REQUIRED_WEAPON_KEYS:
-            if k not in w:
-                problems.append(f"weapon {wid} missing key: {k}")
+        problems.extend(f"weapon {wid} missing key: {k}" for k in _REQUIRED_WEAPON_KEYS if k not in w)
         tier = w.get("tier")
         if not isinstance(tier, int) or not (1 <= tier <= 4):
             problems.append(f"weapon {wid} has invalid tier: {tier}")
@@ -48,9 +47,11 @@ def validate_dataset(dataset: dict) -> list[str]:
             problems.append(f"character missing id: {ch.get('name', '<unknown>')}")
         if not isinstance(ch.get("gain_modifiers"), list):
             problems.append(f"character {ch.get('id', '<unknown>')} missing gain_modifiers list")
-    for st in dataset.get("sets", []):
-        if not isinstance(st.get("bonuses"), list):
-            problems.append(f"set {st.get('id', '<unknown>')} missing bonuses list")
+    problems.extend(
+        f"set {st.get('id', '<unknown>')} missing bonuses list"
+        for st in dataset.get("sets", [])
+        if not isinstance(st.get("bonuses"), list)
+    )
 
     return problems
 

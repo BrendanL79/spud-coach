@@ -99,7 +99,6 @@ def _parse_array(tokens: list[str], pos: int = 0):
 def parse_tres(text: str) -> TresDoc:
     doc = TresDoc()
     section = None
-    section_attrs: dict = {}
     buffer_key = None
     buffer_val: list[str] = []
 
@@ -111,7 +110,6 @@ def parse_tres(text: str) -> TresDoc:
 
     for line in text.splitlines():
         stripped = line.strip()
-        header = _HEADER_RE.match(stripped) if stripped.startswith("[") and "=" not in stripped.split("]")[0].split(" ", 1)[0] else None
         # A header line looks like [name attr=... ]; a resource kv can also
         # start with '[' (an array). Distinguish: headers have no '=' before
         # the first space and are not inside a [resource] value continuation.
@@ -123,7 +121,6 @@ def parse_tres(text: str) -> TresDoc:
             name = m.group(1).strip()
             attrs = _parse_header_attrs(m.group(2) or "")
             section = name
-            section_attrs = attrs
             if name == "ext_resource":
                 doc.ext_resources[attrs["id"]] = {"path": attrs.get("path"), "type": attrs.get("type")}
             elif name == "sub_resource":

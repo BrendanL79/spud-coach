@@ -27,9 +27,9 @@ def _classify(effect: dict, item: dict, character: dict, current_stats: dict) ->
     if key in character.get("wanted_tags", []):
         return "live", f"{key} is a wanted stat for this character"
 
-    if key.startswith("stat_") and isinstance(value, (int, float)) and value > 0:
-        if current_stats.get(_short(key), 0) <= 0:
-            return "wasted", f"no investment in {_short(key)}"
+    if key.startswith("stat_") and isinstance(value, (int, float)) and value > 0 \
+            and current_stats.get(_short(key), 0) <= 0:
+        return "wasted", f"no investment in {_short(key)}"
 
     return "live", "applies to this build"
 

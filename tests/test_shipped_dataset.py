@@ -69,5 +69,16 @@ def test_shipped_dataset_is_complete():
     assert any(e["text"] for e in hc["effects"])  # effect text_keys resolved
     rg = query.get_character(ds, "Ranger")
     assert rg["display_name"] == "Ranger"
-    # schema_version 2 = proc-aware + localized dataset
-    assert ds["schema_version"] == 2
+    # schema_version 3 = 1-indexed item tiers (2 was proc-aware + localized)
+    assert ds["schema_version"] == 3
+
+
+@pytest.mark.skipif(not os.path.exists(DATA), reason="dataset not built")
+def test_read_me_provenance_complete_on_shipped_dataset():
+    from brotato_coach import orientation
+
+    ds = json.load(open(DATA, encoding="utf-8"))
+    primer = orientation.read_me_payload(ds)["primer"]
+    line = next(ln for ln in primer.splitlines()
+                if ln.startswith("Dataset: Brotato v"))
+    assert "unknown" not in line
