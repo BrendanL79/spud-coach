@@ -24,7 +24,8 @@ def test_assemble_and_validate_ok():
     item = {"id": "i", "name": "I", "tier": 0, "value": 10, "tags": [], "effects": [],
             "archetype": [], "frozen_stat": None, "scaling_stats": [], "damage_tags": []}
     ds = dataset.assemble_dataset(game_version="1.1.0.0", generated_at="2026-07-01T00:00:00Z",
-                                  weapons=[weapon], items=[item], characters=[], sets=[])
+                                  weapons=[weapon], items=[item], characters=[], sets=[],
+                                  enemies=[], zone_1_waves=[])
     assert ds["schema_version"] == dataset.DATASET_VERSION
     assert ds["game_version"] == "1.1.0.0"
     assert dataset.validate_dataset(ds) == []
@@ -33,7 +34,8 @@ def test_assemble_and_validate_ok():
 def test_validate_flags_bad_tier():
     ds = dataset.assemble_dataset(game_version="x", generated_at="t",
                                   weapons=[{"id": "w", "tier": 9, "dps_slope_per_rd": 1.0}],
-                                  items=[], characters=[], sets=[])
+                                  items=[], characters=[], sets=[],
+                                  enemies=[], zone_1_waves=[])
     problems = dataset.validate_dataset(ds)
     assert any("tier" in p for p in problems)
 
@@ -41,3 +43,29 @@ def test_validate_flags_bad_tier():
 def test_load_missing_dataset_message(tmp_path):
     with pytest.raises(FileNotFoundError, match=re.escape("build_dataset.py")):
         dataset.load_dataset(str(tmp_path / "nope.json"))
+
+
+def _minimal(**over):
+    base = {"game_version": "1.1.15.4", "generated_at": "x", "weapons": [], "items": [],
+            "characters": [], "sets": [], "enemies": [], "zone_1_waves": []}
+    base.update(over)
+    return dataset.assemble_dataset(**base)
+
+
+def test_schema_version_is_4():
+    assert _minimal()["schema_version"] == 4
+
+
+def test_enemies_and_waves_present_in_output():
+    ds = _minimal(enemies=[{"id": "baby_alien", "name": "Baby Alien"}],
+                  zone_1_waves=[{"wave": 1, "groups": [{"enemy_id": "baby_alien"}]}])
+    assert ds["enemies"][0]["id"] == "baby_alien"
+    assert ds["zone_1_waves"][0]["wave"] == 1
+    assert dataset.validate_dataset(ds) == []
+
+
+def test_validate_flags_dangling_enemy_reference():
+    ds = _minimal(enemies=[{"id": "baby_alien", "name": "Baby Alien"}],
+                  zone_1_waves=[{"wave": 1, "groups": [{"enemy_id": "ghost_unknown"}]}])
+    problems = dataset.validate_dataset(ds)
+    assert any("ghost_unknown" in p for p in problems)

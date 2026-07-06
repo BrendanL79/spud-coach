@@ -4,13 +4,14 @@ import json
 
 from brotato_coach.builders.mechanics import STAT_MECHANICS
 
-DATASET_VERSION = 3
+DATASET_VERSION = 4  # was 3
 
 _REQUIRED_WEAPON_KEYS = ("id", "name", "tier", "dps_slope_per_rd", "dps_at_zero_rd")
 
 
 def assemble_dataset(*, game_version: str, generated_at: str, weapons: list,
-                     items: list, characters: list, sets: list) -> dict:
+                     items: list, characters: list, sets: list,
+                     enemies: list, zone_1_waves: list) -> dict:
     return {
         "schema_version": DATASET_VERSION,
         "game_version": game_version,
@@ -20,13 +21,16 @@ def assemble_dataset(*, game_version: str, generated_at: str, weapons: list,
         "items": items,
         "characters": characters,
         "sets": sets,
+        "enemies": enemies,
+        "zone_1_waves": zone_1_waves,
     }
 
 
 def validate_dataset(dataset: dict) -> list[str]:
     problems: list[str] = [
         f"missing top-level key: {key}"
-        for key in ("schema_version", "game_version", "weapons", "items", "characters", "sets")
+        for key in ("schema_version", "game_version", "weapons", "items", "characters", "sets",
+                    "enemies", "zone_1_waves")
         if key not in dataset
     ]
 
@@ -52,6 +56,19 @@ def validate_dataset(dataset: dict) -> list[str]:
         for st in dataset.get("sets", [])
         if not isinstance(st.get("bonuses"), list)
     )
+
+    enemy_ids = {e.get("id") for e in dataset.get("enemies", [])}
+    problems.extend(
+        f"enemy missing id: {e.get('name', '<unknown>')}"
+        for e in dataset.get("enemies", [])
+        if "id" not in e
+    )
+    for w in dataset.get("zone_1_waves", []):
+        for g in w.get("groups", []):
+            eid = g.get("enemy_id")
+            if eid and eid not in enemy_ids:
+                problems.append(
+                    f"wave {w.get('wave', '?')} references unknown enemy '{eid}'")
 
     return problems
 
