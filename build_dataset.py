@@ -1,12 +1,13 @@
 """Distill extracted/ .tres game data into data/brotato.json.
 
 Usage:
-    python build_dataset.py --extracted extracted --out data/brotato.json
+    python build_dataset.py --extracted extracted --recovered recovered --out data/brotato.json
 
 --game-version and --generated-at are both optional: game version auto-detects from
---version-file (default recovered/singletons/progress_data.gd), and generated_at defaults
+--version-file (default <recovered>/singletons/progress_data.gd), and generated_at defaults
 to the current UTC time. Pass either explicitly to override, e.g. for a pinned/reproducible
-build.
+build. Running from outside the repo root (e.g. a worktree) needs only --extracted and
+--recovered pointed at the real game-data checkout.
 """
 
 from __future__ import annotations
@@ -34,9 +35,28 @@ def _read(path: str) -> str:
         return fh.read()
 
 
+def resolve_recovered_paths(recovered: str, version_file: str | None,
+                            translations: str | None) -> tuple[str, str]:
+    """Derive the decompiled-source input paths from the recovered/ root.
+
+    Explicit --version-file/--translations values win; otherwise both derive
+    from --recovered, so a build run outside the repo root needs two path
+    flags (--extracted/--recovered), not four.
+    """
+    return (
+        version_file or os.path.join(recovered, "singletons", "progress_data.gd"),
+        translations or os.path.join(recovered, ".assets", "resources",
+                                     "translations", "translations.csv"),
+    )
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--extracted", default="extracted")
+    parser.add_argument(
+        "--recovered", default="recovered",
+        help="decompiled-code root; --version-file and --translations derive "
+             "from it unless passed explicitly")
     parser.add_argument("--out", default="data/brotato.json")
     parser.add_argument(
         "--game-version", default=None,
@@ -45,23 +65,25 @@ def main(argv=None) -> int:
         "--generated-at", default=None,
         help="override the build timestamp; defaults to the current UTC time if omitted")
     parser.add_argument(
-        "--version-file",
-        default="recovered/singletons/progress_data.gd",
+        "--version-file", default=None,
         help="decompiled Godot singleton providing the VERSION constant; "
-             "used when --game-version is omitted")
+             "used when --game-version is omitted "
+             "(default: <recovered>/singletons/progress_data.gd)")
     parser.add_argument(
-        "--translations",
-        default="recovered/.assets/resources/translations/translations.csv",
-        help="decompiled Godot translations CSV; skipped if absent")
+        "--translations", default=None,
+        help="decompiled Godot translations CSV; skipped if absent "
+             "(default: <recovered>/.assets/resources/translations/translations.csv)")
     args = parser.parse_args(argv)
+    version_file, translations = resolve_recovered_paths(
+        args.recovered, args.version_file, args.translations)
 
     game_version = args.game_version
     if game_version is None:
-        if os.path.isfile(args.version_file):
-            game_version = parse_game_version(_read(args.version_file))
+        if os.path.isfile(version_file):
+            game_version = parse_game_version(_read(version_file))
         if game_version is None:
             parser.error(
-                f"could not detect game version from {args.version_file}; "
+                f"could not detect game version from {version_file}; "
                 "pass --game-version explicitly")
 
     generated_at = args.generated_at
@@ -69,8 +91,8 @@ def main(argv=None) -> int:
         generated_at = format_generated_at(datetime.now(timezone.utc))
 
     tr: dict[str, str] = {}
-    if os.path.isfile(args.translations):
-        tr = parse_translations_csv(_read(args.translations))
+    if os.path.isfile(translations):
+        tr = parse_translations_csv(_read(translations))
 
     weapons = []
     for entry in discover.find_weapon_dirs(args.extracted):
