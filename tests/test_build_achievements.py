@@ -86,6 +86,12 @@ def test_item_reward_resolves_item_id():
     assert rec["reward_id"] == "item_anvil"
 
 
+def test_unrecognized_reward_type_is_null_not_mislabeled_as_item():
+    text = ARMS_DEALER.replace("reward_type = 0", "reward_type = 99")
+    rec = build_achievement_record(text)
+    assert rec["reward_type"] is None
+
+
 def test_parse_achievement_localizations_csv_groups_by_id_and_locale():
     loc = parse_achievement_localizations_csv(LOC_CSV)
     assert set(loc["chal_advanced_technology"]) == {"default", "fr"}

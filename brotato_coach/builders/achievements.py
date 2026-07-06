@@ -18,6 +18,11 @@ import csv
 import io
 import re
 
+from brotato_coach.builders.discover import (
+    CHARACTER_ID_PREFIX,
+    ITEM_ID_PREFIX,
+    WEAPON_ID_PREFIX,
+)
 from brotato_coach.tres import parse_tres
 
 _REWARD_TYPE = {
@@ -25,17 +30,18 @@ _REWARD_TYPE = {
     4: "CONSUMABLE", 5: "UPGRADE", 6: "CHARACTER", 7: "DIFFICULTY", 8: "SYSTEM",
 }
 
-# Reward .tres path -> domain-prefixed id, matching the id conventions the
-# other builders assign (character_<folder>/weapon_<folder>/item_<folder> —
-# see discover.py's find_character_dirs/find_weapon_dirs/find_item_dirs).
-# Keyed off the path shape rather than reward_type so STARTING_WEAPON
-# resolves the same as WEAPON without a special case.
+# Reward .tres path -> domain-prefixed id, sourced from the same
+# CHARACTER_ID_PREFIX/WEAPON_ID_PREFIX/ITEM_ID_PREFIX constants
+# discover.py's find_character_dirs/find_weapon_dirs/find_item_dirs assign,
+# so the two can't drift out of sync. Keyed off the path shape rather than
+# reward_type so STARTING_WEAPON resolves the same as WEAPON without a
+# special case. Only these three occur among real achievement rewards
+# (verified against the extracted challenge data) — no consumable/upgrade
+# achievement reward has ever shipped.
 _REWARD_PATH_PATTERNS = [
-    (re.compile(r"items/characters/([^/]+)/"), "character"),
-    (re.compile(r"weapons/(?:melee|ranged)/([^/]+)/"), "weapon"),
-    (re.compile(r"items/consumables/([^/]+)/"), "consumable"),
-    (re.compile(r"items/upgrades/([^/]+)/"), "upgrade"),
-    (re.compile(r"items/all/([^/]+)/"), "item"),
+    (re.compile(r"items/characters/([^/]+)/"), CHARACTER_ID_PREFIX),
+    (re.compile(r"weapons/(?:melee|ranged)/([^/]+)/"), WEAPON_ID_PREFIX),
+    (re.compile(r"items/all/([^/]+)/"), ITEM_ID_PREFIX),
 ]
 
 _LOC_FIELDS = {
@@ -53,7 +59,7 @@ def _resolve_reward_id(path: str | None) -> str | None:
     for pattern, prefix in _REWARD_PATH_PATTERNS:
         m = pattern.search(path)
         if m:
-            return f"{prefix}_{m.group(1)}"
+            return f"{prefix}{m.group(1)}"
     return None
 
 
@@ -68,7 +74,7 @@ def build_achievement_record(chal_text: str) -> dict:
 
     reward_type_num = d.get("reward_type", 0)
     reward_type = _REWARD_TYPE.get(
-        int(reward_type_num) if isinstance(reward_type_num, (int, float)) else 0, "ITEM")
+        int(reward_type_num) if isinstance(reward_type_num, (int, float)) else -1)
 
     reward_ref = d.get("reward")
     reward_path = None

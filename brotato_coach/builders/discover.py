@@ -5,6 +5,13 @@ import os
 
 from brotato_coach.tres import parse_tres
 
+# Domain id prefixes assigned below and reused by
+# achievements.py::_resolve_reward_id — keep both in sync with these
+# constants rather than duplicating the literals.
+CHARACTER_ID_PREFIX = "character_"
+WEAPON_ID_PREFIX = "weapon_"
+ITEM_ID_PREFIX = "item_"
+
 
 def _res_url_to_path(extracted_root: str, res_url: str | None) -> str | None:
     if res_url and res_url.startswith("res://"):
@@ -96,7 +103,7 @@ def find_weapon_dirs(extracted_root: str) -> list[dict]:
             effect_paths, classes = _resolve_weapon_refs(extracted_root, data[0])
             companion_paths = _resolve_effect_companions(extracted_root, effect_paths)
             results.append({
-                "weapon_id": f"weapon_{weapon_folder}",
+                "weapon_id": f"{WEAPON_ID_PREFIX}{weapon_folder}",
                 "name": weapon_folder.replace("_", " ").title(),
                 "tier": int(tier_name),
                 "stats_path": stats[0],
@@ -150,7 +157,7 @@ def find_item_dirs(extracted_root: str) -> list[dict]:
         prefix = data_name[: -len("_data.tres")] if data_name.endswith("_data.tres") else data_name[: -len(".tres")]
         effects = sorted(glob.glob(os.path.join(d, f"{prefix}_effect_*.tres")))
         results.append({
-            "item_id": f"item_{folder}", "name": _title(folder),
+            "item_id": f"{ITEM_ID_PREFIX}{folder}", "name": _title(folder),
             "data_path": data, "effect_paths": effects,
         })
     return results
@@ -167,7 +174,7 @@ def find_character_dirs(extracted_root: str) -> list[dict]:
             continue
         effects = sorted(glob.glob(os.path.join(d, f"{folder}_effect_*.tres")))
         results.append({
-            "char_id": f"character_{folder}", "name": _title(folder),
+            "char_id": f"{CHARACTER_ID_PREFIX}{folder}", "name": _title(folder),
             "data_path": data, "effect_paths": effects,
         })
     return results
