@@ -263,3 +263,18 @@ def test_find_enemy_dirs(tmp_path):
     assert e["name"] == "Baby Alien"
     assert os.path.basename(e["stats_path"]) == "baby_alien_stats.tres"
     assert os.path.basename(e["scene_path"]) == "baby_alien.tscn"
+
+
+def test_find_enemy_dirs_accepts_bare_stats_tres(tmp_path):
+    from brotato_coach.builders import discover
+
+    d = tmp_path / "entities" / "units" / "enemies" / "evil_mob"
+    d.mkdir(parents=True)
+    (d / "evil_mob.tres").write_text(
+        '[gd_resource]\n'
+        '[ext_resource path="res://entities/units/unit/stats.gd" type="Script" id=1]\n'
+        '[resource]\nscript = ExtResource( 1 )\nhealth = 10\n', encoding="utf-8")
+    (d / "evil_mob.tscn").write_text("[gd_scene]\n", encoding="utf-8")
+    found = discover.find_enemy_dirs(str(tmp_path))
+    assert [e["enemy_id"] for e in found] == ["evil_mob"]
+    assert found[0]["stats_path"].endswith("evil_mob.tres")

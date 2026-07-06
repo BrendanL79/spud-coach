@@ -196,6 +196,29 @@ def find_set_dirs(extracted_root: str) -> list[dict]:
     return results
 
 
+def _enemy_stats_path(dir_path: str, folder: str) -> str | None:
+    """Locate an enemy dir's stats file.
+
+    Most enemies name it "{folder}_stats.tres", but at least one (evil_mob)
+    ships it as a bare "{folder}.tres" instead. Fall back to the bare name
+    only when its script reference is a stats resource (ends in stats.gd),
+    mirroring _find_item_data_path's fallback pattern above.
+    """
+    stats = glob.glob(os.path.join(dir_path, "*_stats.tres"))
+    if stats:
+        return stats[0]
+    bare = os.path.join(dir_path, f"{folder}.tres")
+    if os.path.isfile(bare):
+        with open(bare, encoding="utf-8") as fh:
+            doc = parse_tres(fh.read())
+        ref = doc.resource.get("script")
+        if isinstance(ref, dict) and "__ext__" in ref:
+            ext = doc.ext_resources.get(ref["__ext__"]) or {}
+            if str(ext.get("path", "")).endswith("stats.gd"):
+                return bare
+    return None
+
+
 def find_enemy_dirs(extracted_root: str) -> list[dict]:
     results = []
     base = os.path.join(extracted_root, "entities", "units", "enemies")
@@ -203,15 +226,15 @@ def find_enemy_dirs(extracted_root: str) -> list[dict]:
         if not os.path.isdir(d):
             continue
         folder = os.path.basename(d)
-        stats = glob.glob(os.path.join(d, "*_stats.tres"))
-        if not stats:
+        stats_path = _enemy_stats_path(d, folder)
+        if not stats_path:
             continue
         scene = os.path.join(d, f"{folder}.tscn")
         results.append({
             "enemy_id": folder,
             "name": _title(folder),
             "folder": folder,
-            "stats_path": stats[0],
+            "stats_path": stats_path,
             "scene_path": scene if os.path.isfile(scene) else None,
         })
     return results

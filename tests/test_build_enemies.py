@@ -19,7 +19,9 @@ armor_increase_each_wave = 0.0
 _SPITTER_SCENE = '''[gd_scene load_steps=2 format=2]
 [ext_resource path="res://entities/units/enemies/attack_behaviors/shooting_attack_behavior.gd" type="Script" id=3]
 [ext_resource path="res://projectiles/bullet_enemy/enemy_projectile.tscn" type="PackedScene" id=4]
+[node name="Enemy" instance=ExtResource( 1 )]
 [node name="AttackBehavior" parent="." index="7"]
+script = ExtResource( 3 )
 projectile_scene = ExtResource( 4 )
 damage = 1
 damage_increase_each_wave = 0.75
@@ -28,8 +30,33 @@ number_projectiles = 1
 
 _BRUISER_SCENE = '''[gd_scene load_steps=2 format=2]
 [ext_resource path="res://entities/units/enemies/attack_behaviors/charging_attack_behavior.gd" type="Script" id=3]
+[node name="Enemy" instance=ExtResource( 1 )]
 [node name="AttackBehavior" parent="." index="7"]
+script = ExtResource( 3 )
 charge_speed = 700.0
+'''
+
+_SPAWNER_SCENE = '''[gd_scene load_steps=2 format=2]
+[ext_resource path="res://entities/units/enemies/attack_behaviors/spawning_attack_behavior.gd" type="Script" id=3]
+[node name="Enemy" instance=ExtResource( 1 )]
+[node name="AttackBehavior" parent="." index="7"]
+script = ExtResource( 3 )
+damage = 2
+damage_increase_each_wave = 0.5
+number_projectiles = 1
+'''
+
+# Boss: primary AttackBehavior is charging (id=8); an auxiliary node references
+# shooting (id=6). kind must stay "charging" (primary node wins, no collapse).
+_BOSS_SCENE = '''[gd_scene load_steps=2 format=2]
+[ext_resource path="res://entities/units/enemies/attack_behaviors/shooting_attack_behavior.gd" type="Script" id=6]
+[ext_resource path="res://entities/units/enemies/attack_behaviors/charging_attack_behavior.gd" type="Script" id=8]
+[node name="Boss" instance=ExtResource( 1 )]
+[node name="AttackBehavior" parent="." index="7"]
+script = ExtResource( 8 )
+charge_speed = 700.0
+[node name="ChargingShootProjectilesBehavior" type="Node2D" parent="." index="8"]
+script = ExtResource( 6 )
 '''
 
 
@@ -58,4 +85,17 @@ def test_ranged_enemy_attack_profile():
 def test_charging_enemy_kind_and_ability():
     rec = build_enemy_record(_BABY_STATS, _BRUISER_SCENE, enemy_id="bruiser", name="Bruiser")
     assert rec["attack"]["kind"] == "charging"
+    assert "charger" in rec["abilities"]
+
+
+def test_spawner_enemy_kind_and_ability():
+    rec = build_enemy_record(_BABY_STATS, _SPAWNER_SCENE, enemy_id="spawner", name="Spawner")
+    assert rec["attack"]["kind"] == "ranged"
+    assert "spawner" in rec["abilities"]
+
+
+def test_boss_scene_flags_bespoke_and_keeps_primary_kind():
+    rec = build_enemy_record(_BABY_STATS, _BOSS_SCENE, enemy_id="croc", name="Croc")
+    assert rec["attack"]["kind"] == "charging"      # primary AB node wins, not collapsed
+    assert "bespoke_kit_not_modeled" in rec["abilities"]
     assert "charger" in rec["abilities"]

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from brotato_coach.builders.localization import resolve_text
 from brotato_coach.scene import parse_scene_node
 from brotato_coach.tres import parse_tres
@@ -11,6 +13,8 @@ _BEHAVIOR_KIND = {
     "spawning_attack_behavior": ("ranged", "spawner"),
 }
 
+_BOSS_ROOT_RE = re.compile(r'^\[node name="Boss" instance=', re.MULTILINE)
+
 
 def _num(d: dict, key: str, default: float = 0.0):
     v = d.get(key)
@@ -20,24 +24,32 @@ def _num(d: dict, key: str, default: float = 0.0):
 def _classify_attack(scene_text: str | None) -> tuple[str, list[str], dict]:
     """Return (kind, abilities, attack_params) from an enemy scene.
 
-    kind/abilities derive from which *_attack_behavior.gd the scene references
-    (available in ext_resources without a scene-node parse). Numeric params
-    come from the AttackBehavior node. No behavior script -> pure contact melee.
+    kind derives from the primary AttackBehavior node's own script (the enemy's
+    main attack); auxiliary behavior nodes on bosses are intentionally ignored.
+    Boss scenes (root node "Boss") carry a bespoke_kit_not_modeled ability.
+    No AttackBehavior node -> pure contact melee. Numeric params come from the
+    AttackBehavior node only for ranged attacks.
     """
     if not scene_text:
         return "melee", [], {}
     doc = parse_tres(scene_text)
-    kind, abilities = "melee", []
-    for ext in doc.ext_resources.values():
-        path = str(ext.get("path", ""))
-        if path.endswith("_attack_behavior.gd"):
-            base = path.rsplit("/", 1)[-1][: -len(".gd")]
-            if base in _BEHAVIOR_KIND:
-                k, ability = _BEHAVIOR_KIND[base]
-                kind = k
-                if ability:
-                    abilities.append(ability)
+    abilities: list[str] = []
+    if _BOSS_ROOT_RE.search(scene_text):
+        abilities.append("bespoke_kit_not_modeled")
+
     node = parse_scene_node(scene_text, "AttackBehavior")
+    kind = "melee"
+    ref = node.get("script")
+    if isinstance(ref, dict) and "__ext__" in ref:
+        path = str((doc.ext_resources.get(ref["__ext__"]) or {}).get("path", ""))
+        base = path.rsplit("/", 1)[-1]
+        if base.endswith("_attack_behavior.gd"):
+            slug = base[: -len(".gd")]
+            k, ability = _BEHAVIOR_KIND.get(slug, ("melee", None))
+            kind = k
+            if ability and ability not in abilities:
+                abilities.append(ability)
+
     params: dict = {}
     if kind == "ranged":
         params = {
