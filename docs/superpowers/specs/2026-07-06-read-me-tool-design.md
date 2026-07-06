@@ -120,7 +120,7 @@ sourcing rules, and required sentinel content. Sections, in order:
    empty dataset-wide (everything is modeled or classified); crit is NOT in
    any DPS line; the player-level `explosion_damage` stat is unmodeled.
 5. **Tool usage notes** — call `get_filter_options` before passing filter
-   values (case-sensitive exact match); API tiers are 1-indexed (1–6 weapons
+   values (case-sensitive exact match); API tiers are 1-indexed (1–4 weapons
    / 1–4 items); `stats` parameters use short names (e.g. `ranged_damage`,
    not `stat_ranged_damage`); `explain_stat`/`stat_display_value` take the
    `stat_`-prefixed form.

@@ -56,7 +56,7 @@ def build_item_record(data_text: str, effect_texts: list[str], *, item_id: str,
         "description": resolve_text(tr, d.get("description")),
         # Raw .tres tiers are 0-indexed; ship the 1-indexed tier the game
         # UI displays (I-IV), matching weapon records and runfile.py.
-        "tier": int(d.get("tier", 0)) + 1,
+        "tier": int(d.get("tier") or 0) + 1,
         "value": d.get("value", 0),
         "tags": tags,
         "effects": effects,
