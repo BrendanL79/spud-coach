@@ -3,7 +3,7 @@
   "name": "io.github.BrendanL79/spudcoach",
   "title": "Brotato Coach",
   "description": "Deterministic Brotato theorycrafter MCP server: facts and math, not guesses or tier lists.",
-  "version": "0.9.3",
+  "version": "0.10.0",
   "repository": {
     "url": "https://github.com/BrendanL79/spud-coach",
     "source": "github"
@@ -14,7 +14,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "spudcoach",
-      "version": "0.9.3",
+      "version": "0.10.0",
       "runtimeHint": "uvx",
       "transport": { "type": "stdio" },
       "environmentVariables": [
