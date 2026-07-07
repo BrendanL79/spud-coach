@@ -42,3 +42,22 @@ def test_payload_shape():
     assert set(payload) == {"primer"}
     assert isinstance(payload["primer"], str)
     assert len(payload["primer"]) > 2000
+
+
+def test_read_me_mentions_bestiary_scaling():
+    primer = orientation.read_me_payload(FAKE_DS)["primer"]
+    # per-wave scaling formula (named against the record's per_wave field) and
+    # the speed-range convention
+    assert "per_wave" in primer
+    assert "wave - 1" in primer
+    assert "speed_randomization" in primer
+    # wave_composition honesty envelope: exact base groups, randomized elites/hordes
+    assert "wave_composition" in primer
+    assert "randomized" in primer
+
+
+def test_read_me_appears_in_nuance():
+    primer = orientation.read_me_payload(FAKE_DS)["primer"]
+    # empty appears_in means "not in numbered-wave base groups", not "never spawns"
+    assert "appears_in" in primer
+    assert "never spawns" in primer

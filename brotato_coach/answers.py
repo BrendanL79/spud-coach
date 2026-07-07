@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import difflib
 
-from brotato_coach import calc, evaluate, query, runfile
+from brotato_coach import bestiary, calc, evaluate, query, runfile
 
 
 def _weapon_at(ds: dict, name: str, tier: int) -> dict | None:
@@ -167,6 +167,15 @@ def evaluate_run(ds: dict, run: dict) -> dict:
     if ctx.get("coop"):
         notes.append("co-op run — only player 1's build was analyzed")
 
+    wave_no = ctx.get("wave")
+    if isinstance(wave_no, int) and any(
+            w.get("wave") == wave_no for w in ds.get("zone_1_waves", [])):
+        wave_ctx = bestiary.wave_context(ds, wave_no, ctx.get("danger"))
+    else:
+        wave_ctx = {"death_wave": wave_no,
+                    "note": "no base-game wave data for this wave "
+                            "(endless, or wave outside 1-20)"}
+
     return {
         "run": {"character": char_name, "character_id": build["character"], **ctx},
         "realized_stats": stats,
@@ -174,5 +183,6 @@ def evaluate_run(ds: dict, run: dict) -> dict:
         "weapon_dps_ranking": ranking,
         "set_bonuses": set_bonuses,
         "item_verdicts": item_verdicts,
+        "wave_context": wave_ctx,
         "notes": notes,
     }

@@ -126,6 +126,26 @@ The DPS model is deliberately narrow and honest about it:
   see an entry, it strictly means "uninvestigated" — mention it when the
   number matters.
 
+## Bestiary and enemy scaling
+
+Orientation only — see get_enemy, list_enemies, and wave_composition for
+the data itself.
+
+- Enemy HP, damage, and armor scale per wave: a record's effective stat is
+  base.<stat> + per_wave.<stat> x (wave - 1) (get_enemy returns this as
+  effective when you pass a wave); movement speed is a range,
+  speed +/- speed_randomization, not a single value.
+- wave_composition reports the EXACT base-game (Crash Zone) enemy groups
+  for waves 1-20. Realized enemy counts scale with run modifiers (the
+  number_of_enemies % setting, co-op player count), and elite/horde waves
+  are scheduled per-run — randomized, never guaranteed at a specific wave.
+- An enemy's appears_in holds provenance LABELS (currently just "normal"),
+  NOT wave numbers. "normal" means the enemy shows up in a base group of the
+  numbered waves (1-20). appears_in is EMPTY for bosses and for
+  horde/elite/endless-only enemies: empty means "not in the numbered-wave
+  base groups," NOT "never spawns" — check danger/wave-type context before
+  telling a user an enemy can't show up.
+
 ## Using the tools
 
 - Call get_filter_options BEFORE passing filter values to list_weapons /

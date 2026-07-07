@@ -256,3 +256,56 @@ def test_find_weapon_dirs_main_data_glob_skips_burning_data_companion(tmp_path):
     assert len(found) == 1
     assert found[0]["data_path"].endswith("torch_data.tres")
     assert not found[0]["data_path"].endswith("torch_burning_data.tres")
+
+
+def test_find_enemy_dirs(tmp_path):
+    import os
+
+    from brotato_coach.builders import discover
+
+    root = tmp_path
+    d = root / "entities" / "units" / "enemies" / "baby_alien"
+    d.mkdir(parents=True)
+    (d / "baby_alien_stats.tres").write_text("[resource]\nhealth = 3\n", encoding="utf-8")
+    (d / "baby_alien.tscn").write_text("[gd_scene]\n", encoding="utf-8")
+    # a non-enemy sibling dir with no *_stats.tres must be skipped
+    (root / "entities" / "units" / "enemies" / "attack_behaviors").mkdir()
+
+    found = discover.find_enemy_dirs(str(root))
+    assert len(found) == 1
+    e = found[0]
+    assert e["enemy_id"] == "baby_alien"
+    assert e["name"] == "Baby Alien"
+    assert os.path.basename(e["stats_path"]) == "baby_alien_stats.tres"
+    assert os.path.basename(e["scene_path"]) == "baby_alien.tscn"
+
+
+def test_find_enemy_dirs_accepts_bare_stats_tres(tmp_path):
+    from brotato_coach.builders import discover
+
+    d = tmp_path / "entities" / "units" / "enemies" / "evil_mob"
+    d.mkdir(parents=True)
+    (d / "evil_mob.tres").write_text(
+        '[gd_resource]\n'
+        '[ext_resource path="res://entities/units/unit/stats.gd" type="Script" id=1]\n'
+        '[resource]\nscript = ExtResource( 1 )\nhealth = 10\n', encoding="utf-8")
+    (d / "evil_mob.tscn").write_text("[gd_scene]\n", encoding="utf-8")
+    found = discover.find_enemy_dirs(str(tmp_path))
+    assert [e["enemy_id"] for e in found] == ["evil_mob"]
+    assert found[0]["stats_path"].endswith("evil_mob.tres")
+
+
+def test_find_zone_waves_excludes_test_wave(tmp_path):
+    from brotato_coach.builders import discover
+
+    z = tmp_path / "zones" / "zone_1"
+    (z / "001").mkdir(parents=True)
+    (z / "001" / "wave_1.tres").write_text(
+        '[resource]\ngroups_data = [  ]\n', encoding="utf-8")
+    test_dir = z / "021 (test)"
+    test_dir.mkdir()
+    (test_dir / "wave_21.tres").write_text(
+        '[resource]\ngroups_data = [  ]\n', encoding="utf-8")
+
+    waves = discover.find_zone_waves(str(tmp_path))
+    assert [w["wave"] for w in waves] == [1]  # wave 21 (test) excluded

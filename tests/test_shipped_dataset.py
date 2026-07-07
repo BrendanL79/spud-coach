@@ -69,8 +69,8 @@ def test_shipped_dataset_is_complete():
     assert any(e["text"] for e in hc["effects"])  # effect text_keys resolved
     rg = query.get_character(ds, "Ranger")
     assert rg["display_name"] == "Ranger"
-    # schema_version 3 = 1-indexed item tiers (2 was proc-aware + localized)
-    assert ds["schema_version"] == 3
+    # schema_version 4 = enemies + zone_1_waves (3 was 1-indexed item tiers)
+    assert ds["schema_version"] == 4
 
 
 @pytest.mark.skipif(not os.path.exists(DATA), reason="dataset not built")

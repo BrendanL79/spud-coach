@@ -194,3 +194,42 @@ def test_read_me_tool_returns_rendered_primer():
 
 def test_instructions_point_to_read_me():
     assert "read_me" in build_server(DS).instructions
+
+
+def test_get_enemy_tool_returns_record():
+    ds = {**DS, "enemies": [{"id": "baby_alien", "name": "Baby Alien",
+                             "display_name": "Baby Alien",
+                             "base": {"health": 3, "speed": 250, "speed_randomization": 50,
+                                      "damage": 1, "armor": 0, "attack_cd": 30.0,
+                                      "knockback_resistance": 0.0},
+                             "per_wave": {"health": 2.0, "damage": 0.6, "armor": 0.0},
+                             "attack": {"kind": "melee"}, "abilities": [],
+                             "appears_in": ["normal"]}]}
+    result = asyncio.run(_call(build_server(ds), "get_enemy", name="Baby Alien", wave=20))
+    assert result["effective"]["health"] == 41
+
+
+def test_list_enemies_tool():
+    ds = {**DS, "enemies": [{"id": "baby_alien", "name": "Baby Alien",
+                             "attack": {"kind": "melee"}, "abilities": [],
+                             "appears_in": ["normal"]}]}
+    result = asyncio.run(_call(build_server(ds), "list_enemies", appears_in="normal"))
+    assert result["enemies"][0]["id"] == "baby_alien"
+
+
+def test_wave_composition_tool():
+    ds = {**DS, "zone_1_waves": [{"wave": 1, "wave_duration": 60, "max_enemies": 10,
+                                  "groups": [{"enemy_id": "baby_alien",
+                                             "min_danger": 0, "max_danger": 5}]}]}
+    result = asyncio.run(_call(build_server(ds), "wave_composition", wave=1))
+    assert result["wave"] == 1
+    assert result["base_enemies"][0]["enemy_id"] == "baby_alien"
+
+
+def test_get_filter_options_tool_bestiary_fields():
+    ds = {**DS, "enemies": [{"id": "e", "name": "E", "abilities": ["charger"],
+                             "attack": {"kind": "melee"}, "appears_in": ["normal"]}]}
+    result = asyncio.run(_call(build_server(ds), "get_filter_options"))
+    assert result["enemy_abilities"] == ["charger"]
+    assert result["attack_kinds"] == ["melee"]
+    assert result["enemy_appears_in"] == ["normal"]
