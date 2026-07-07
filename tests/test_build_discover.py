@@ -1,5 +1,20 @@
 from brotato_coach.builders.discover import (
-    find_weapon_dirs, find_item_dirs, find_character_dirs, find_set_dirs)
+    find_weapon_dirs, find_item_dirs, find_character_dirs, find_set_dirs,
+    find_challenge_paths)
+
+
+def test_find_challenge_paths_excludes_global_schema_dir(tmp_path):
+    d = tmp_path / "challenges"
+    d.mkdir(parents=True)
+    (d / "agriculture_data.tres").write_text("data")
+    (d / "apprentice_data.tres").write_text("data")
+    global_dir = d / "global"
+    global_dir.mkdir()
+    (global_dir / "challenge_data.gd").write_text("class_name ChallengeData")
+
+    found = find_challenge_paths(str(tmp_path))
+    assert [p.replace("\\", "/").split("/")[-1] for p in found] == [
+        "agriculture_data.tres", "apprentice_data.tres"]
 
 
 def test_find_weapon_dirs(tmp_path):
