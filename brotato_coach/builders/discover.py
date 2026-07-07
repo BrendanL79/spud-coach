@@ -205,7 +205,7 @@ def _enemy_stats_path(dir_path: str, folder: str) -> str | None:
     only when its script reference is a stats resource (ends in stats.gd),
     mirroring _find_item_data_path's fallback pattern above.
     """
-    stats = glob.glob(os.path.join(dir_path, "*_stats.tres"))
+    stats = sorted(glob.glob(os.path.join(dir_path, "*_stats.tres")))
     if stats:
         return stats[0]
     bare = os.path.join(dir_path, f"{folder}.tres")

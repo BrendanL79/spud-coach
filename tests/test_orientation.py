@@ -43,8 +43,9 @@ def test_payload_shape():
 
 def test_read_me_mentions_bestiary_scaling():
     primer = orientation.read_me_payload(FAKE_DS)["primer"]
-    # per-wave scaling formula and the speed-range convention
-    assert "increase_each_wave" in primer
+    # per-wave scaling formula (named against the record's per_wave field) and
+    # the speed-range convention
+    assert "per_wave" in primer
     assert "wave - 1" in primer
     assert "speed_randomization" in primer
     # wave_composition honesty envelope: exact base groups, randomized elites/hordes
