@@ -78,6 +78,33 @@ def test_stat_display_value_no_modifier():
     assert result["modifier_pct"] == 0
 
 
+def test_display_stats_applies_gain_modifiers_by_short_name():
+    result = answers.display_stats(DS, "Ranger", {"ranged_damage": 6, "speed": 10})
+    assert result == {"ranged_damage": 9, "speed": 10}
+
+
+def test_display_stats_unknown_character_returns_raw():
+    result = answers.display_stats(DS, "Nonexistent", {"ranged_damage": 6})
+    assert result == {"ranged_damage": 6}
+
+
+def test_weapon_dps_with_character_uses_displayed_stats():
+    # raw RD 6 -> Ranger's +50% gain modifier -> displayed RD 9
+    result = answers.weapon_dps(DS, "Minigun", 4, {"ranged_damage": 6}, character="Ranger")
+    assert math.isclose(result["dps"], 55.5556 + 8.3333 * 9, rel_tol=1e-4)
+
+
+def test_weapon_dps_without_character_uses_raw_stats():
+    result = answers.weapon_dps(DS, "Minigun", 4, {"ranged_damage": 6})
+    assert math.isclose(result["dps"], 55.5556 + 8.3333 * 6, rel_tol=1e-4)
+
+
+def test_compare_weapons_with_character_uses_displayed_stats():
+    result = answers.compare_weapons(
+        DS, [("Minigun", 4)], {"ranged_damage": 6}, character="Ranger")
+    assert math.isclose(result["ranking"][0]["dps"], 55.5556 + 8.3333 * 9, rel_tol=1e-4)
+
+
 def test_weapon_dps_adds_expected_proc_contribution():
     result = answers.weapon_dps(DS, "Shredder", 4, {"ranged_damage": 10})
     # base 23.8095 + 0.47619*10 = 28.5714; proc 11.9048 + 0.238095*10 = 14.2857

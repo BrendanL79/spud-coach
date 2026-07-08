@@ -124,7 +124,8 @@ def build_server(ds: dict) -> FastMCP:
 
     @mcp.tool()
     def weapon_dps(name: str, tier: int, stats: Stats,
-                   aoe_enemies_hit: float = 1.0) -> dict[str, Any]:
+                   aoe_enemies_hit: float = 1.0,
+                   character: str | None = None) -> dict[str, Any]:
         """Compute one weapon's realized DPS for a given build, with a breakdown.
 
         `dps` = guaranteed line (`base_dps`) + expected on-hit proc damage
@@ -134,29 +135,37 @@ def build_server(ds: dict) -> FastMCP:
         conservative). Effect keys the model can't yet value are listed in
         `unmodeled_effects` — mention them when the number matters. `stats` is
         the player's current run stats (short names, e.g. ranged_damage); DPS
-        scales linearly with ranged_damage. For ranking several weapons, use
-        compare_weapons; for merge-order questions, use compare_merge_paths.
+        scales linearly with ranged_damage. `stats` must be DISPLAYED values
+        (what the game shows, after the character's stat-gain modifiers) —
+        pass `character` to convert raw save/effects values for you, or
+        pre-convert with stat_display_value if `character` is omitted. For
+        ranking several weapons, use compare_weapons; for merge-order
+        questions, use compare_merge_paths.
         """
         return _safe(answers.weapon_dps)(ds=ds, name=name, tier=tier,
                                          stats=stats.as_dict(),
-                                         aoe_enemies_hit=aoe_enemies_hit)
+                                         aoe_enemies_hit=aoe_enemies_hit,
+                                         character=character)
 
     @mcp.tool()
     def compare_weapons(names_with_tiers: list[tuple[str, int]], stats: Stats,
-                        aoe_enemies_hit: float = 1.0) -> dict[str, Any]:
+                        aoe_enemies_hit: float = 1.0,
+                        character: str | None = None) -> dict[str, Any]:
         """Rank several weapons by realized DPS (guaranteed + expected proc
         damage) at the SAME build stats.
 
         `names_with_tiers` is a list of [name, tier] pairs, e.g.
         [["Minigun", 4], ["SMG", 4]]. `aoe_enemies_hit` scales proc terms for
-        AoE procs (default 1). Returns `{"ranking": [...]}` sorted by total DPS
-        descending. Use when the player asks 'which of these hits hardest'.
+        AoE procs (default 1). `stats` must be DISPLAYED values (see
+        weapon_dps) — pass `character` to convert raw values for you. Returns
+        `{"ranking": [...]}` sorted by total DPS descending. Use when the
+        player asks 'which of these hits hardest'.
         """
         return _safe(lambda **kw: answers.compare_weapons(
             ds, [tuple(x) for x in kw["names_with_tiers"]], kw["stats"],
-            kw["aoe_enemies_hit"]))(
+            kw["aoe_enemies_hit"], kw["character"]))(
             names_with_tiers=names_with_tiers, stats=stats.as_dict(),
-            aoe_enemies_hit=aoe_enemies_hit)
+            aoe_enemies_hit=aoe_enemies_hit, character=character)
 
     @mcp.tool()
     def compare_merge_paths(weapon_name: str, path_a: list[int],

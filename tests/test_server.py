@@ -91,6 +91,28 @@ def test_weapon_dps_tool_reports_proc_fields():
     assert result["unmodeled_effects"] == ["effect_burning"]
 
 
+def test_weapon_dps_tool_character_param_applies_gain_modifier():
+    ds = {**DS, "characters": [
+        {"id": "character_ranger", "name": "Ranger", "gain_modifiers": [
+            {"stat": "stat_ranged_damage", "pct": 50}]}]}
+    server = build_server(ds)
+    result = asyncio.run(_call(server, "weapon_dps", name="Minigun", tier=4,
+                               stats={"ranged_damage": 6}, character="Ranger"))
+    # raw RD 6 -> displayed RD 9 via Ranger's +50% gain modifier
+    assert round(result["dps"], 2) == round(55.5556 + 8.3333 * 9, 2)
+
+
+def test_compare_weapons_tool_character_param_applies_gain_modifier():
+    ds = {**DS, "characters": [
+        {"id": "character_ranger", "name": "Ranger", "gain_modifiers": [
+            {"stat": "stat_ranged_damage", "pct": 50}]}]}
+    server = build_server(ds)
+    result = asyncio.run(_call(server, "compare_weapons",
+                               names_with_tiers=[["Minigun", 4]],
+                               stats={"ranged_damage": 6}, character="Ranger"))
+    assert round(result["ranking"][0]["dps"], 2) == round(55.5556 + 8.3333 * 9, 2)
+
+
 def test_loadout_set_bonuses_tool():
     ds = {**DS,
           "weapons": [{"id": "weapon_smg", "name": "SMG", "tier": 1,

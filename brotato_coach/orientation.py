@@ -165,6 +165,14 @@ the data itself.
 - weapon_dps / compare_weapons rank by the RD line above — for merge-order
   questions use compare_merge_paths; for whole-run post-mortems pass the
   run.json to evaluate_run.
+- **weapon_dps / compare_weapons need DISPLAYED stats, not raw ones.** A
+  run.json's `effects` block stores the RAW pre-gain-modifier accumulator
+  (see "Gain modifiers" above) — feeding that straight in silently
+  understates (or overstates) DPS for any character with a gain modifier on
+  the scaling stat, with no error to catch it. Pass `character` and hand in
+  raw stats; the tool converts them for you. evaluate_run already does this
+  internally, so its weapon_dps_ranking and realized_stats are safe to use
+  as-is.
 """
 
 

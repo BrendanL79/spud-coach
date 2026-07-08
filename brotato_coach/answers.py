@@ -10,11 +10,27 @@ def _weapon_at(ds: dict, name: str, tier: int) -> dict | None:
     return rec if "id" in rec else None
 
 
+def display_stats(ds: dict, character: str, raw_stats: dict) -> dict:
+    """Convert raw stats (short names, e.g. ranged_damage) to the values the
+    game DISPLAYS for `character`, applying that character's stat-gain
+    modifiers. Unknown characters pass the stats through unchanged."""
+    rec = query.get_character(ds, character)
+    mods = {m["stat"]: m["pct"] for m in rec.get("gain_modifiers", [])} if "id" in rec else {}
+    out = {}
+    for short, value in raw_stats.items():
+        pct = mods.get(f"stat_{short}", 0)
+        displayed = value * (1 + pct / 100)
+        out[short] = int(displayed) if float(displayed).is_integer() else displayed
+    return out
+
+
 def weapon_dps(ds: dict, name: str, tier: int, stats: dict,
-               aoe_enemies_hit: float = 1.0) -> dict:
+               aoe_enemies_hit: float = 1.0, character: str | None = None) -> dict:
     rec = query.get_weapon(ds, name, tier=tier)
     if "id" not in rec:
         return rec
+    if character is not None:
+        stats = display_stats(ds, character, stats)
     rd = float(stats.get("ranged_damage", 0))
     base = calc.dps_at(rec["dps_at_zero_rd"], rec["dps_slope_per_rd"], rd)
     proc = aoe_enemies_hit * calc.dps_at(rec.get("proc_dps_at_zero_rd", 0.0),
@@ -34,7 +50,9 @@ def weapon_dps(ds: dict, name: str, tier: int, stats: dict,
 
 
 def compare_weapons(ds: dict, names_with_tiers: list, stats: dict,
-                    aoe_enemies_hit: float = 1.0) -> dict:
+                    aoe_enemies_hit: float = 1.0, character: str | None = None) -> dict:
+    if character is not None:
+        stats = display_stats(ds, character, stats)
     rows = []
     for name, tier in names_with_tiers:
         r = weapon_dps(ds, name, tier, stats, aoe_enemies_hit)
@@ -127,6 +145,9 @@ def evaluate_run(ds: dict, run: dict) -> dict:
 
     Returns run context, realized stats, a weapon-DPS ranking at those stats,
     weapon-class set progress, and a per-item live/wasted/harmful verdict.
+    `realized_stats` (and everything computed from it) is the save's raw
+    effects converted through the character's stat-gain modifiers, matching
+    what the game displays — not the raw accumulator value.
     Unknown weapon/item ids (e.g. content newer than the dataset) are collected
     in `notes` rather than dropped silently. A malformed save comes back as
     `{"error": "bad_run_format", "detail": ...}`.
@@ -136,7 +157,6 @@ def evaluate_run(ds: dict, run: dict) -> dict:
     except runfile.RunFormatError as exc:
         return {"error": "bad_run_format", "detail": str(exc)}
 
-    stats = build["stats"]
     notes: list[str] = []
 
     char_rec = query.get_character(ds, build["character"])
@@ -144,6 +164,11 @@ def evaluate_run(ds: dict, run: dict) -> dict:
     if "id" not in char_rec:
         notes.append(f"unknown character '{build['character']}' — "
                      "not in the loaded dataset")
+
+    # Convert once: raw effects values -> displayed (post-gain-modifier)
+    # values, matching what the player actually sees and what weapon_dps'
+    # RD-scaling model expects.
+    stats = display_stats(ds, build["character"], build["stats"])
 
     ranking = compare_weapons(
         ds, [(w["id"], w["tier"]) for w in build["weapons"]], stats)["ranking"]

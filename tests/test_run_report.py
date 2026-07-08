@@ -71,6 +71,29 @@ def _run(*, character="character_ranger", weapons=None, items=None,
     }
 
 
+DS_RANGER_GAIN = {
+    **DS,
+    "characters": [
+        {"id": "character_ranger", "name": "Ranger", "display_name": "Ranger",
+         "wanted_tags": [], "banned_item_groups": [], "flat_bonuses": [],
+         "gain_modifiers": [{"stat": "stat_ranged_damage", "pct": 50}],
+         "special_effects": []},
+    ],
+}
+
+
+def test_evaluate_run_realized_stats_reflect_gain_modifier():
+    # raw RD 8 -> Ranger's +50% ranged-damage gain -> displayed RD 12
+    r = answers.evaluate_run(DS_RANGER_GAIN, _run(stats={"ranged_damage": 8}))
+    assert r["realized_stats"]["ranged_damage"] == 12
+
+
+def test_evaluate_run_ranks_weapons_at_displayed_stats_not_raw():
+    r = answers.evaluate_run(DS_RANGER_GAIN, _run(stats={"ranged_damage": 8}))
+    # SMG at displayed RD 12: 10 + 1.0*12 = 22 (would be 18 at raw RD 8)
+    assert r["weapon_dps_ranking"][0]["dps"] == 22.0
+
+
 def test_evaluate_run_reports_character_and_context():
     r = answers.evaluate_run(DS, _run())
     assert r["run"]["character"] == "Ranger"
