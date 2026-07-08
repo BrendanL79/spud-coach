@@ -56,6 +56,16 @@ def test_read_me_mentions_bestiary_scaling():
     assert "randomized" in primer
 
 
+def test_read_me_weapon_dps_raw_vs_displayed_contract():
+    primer = orientation.read_me_payload(FAKE_DS)["primer"]
+    # weapon_dps/compare_weapons need DISPLAYED (post-gain-modifier) stats,
+    # not the raw effects values a save file carries — must be explicit,
+    # since a caller feeding raw values gets no error, just a wrong number.
+    assert "weapon_dps" in primer
+    assert "displayed" in primer.lower()
+    assert "character" in primer
+
+
 def test_read_me_appears_in_nuance():
     primer = orientation.read_me_payload(FAKE_DS)["primer"]
     # empty appears_in means "not in numbered-wave base groups", not "never spawns"
