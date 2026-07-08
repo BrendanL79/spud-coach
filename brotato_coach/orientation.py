@@ -89,6 +89,15 @@ The DPS model is deliberately narrow and honest about it:
   cooldown/60, plus any burst-reload amortization.
 - **Crit is NOT modeled.** crit_chance and crit_damage appear on the record
   but are not folded into any DPS line.
+- **Attack-timing synchronization is NOT modeled.** dps / dps_at_zero_rd is a
+  steady-state AVERAGE — it says nothing about how evenly that damage lands
+  over time. Player-reported (not source-verified): a loadout of
+  similar-cycle_time weapons (e.g. several copies of the same weapon) tends
+  to volley in near-unison — a burst, then a shared dead window with no
+  output — while a loadout with staggered cycle_times interleaves attacks
+  for steadier damage and uptime. Two loadouts with the same summed DPS can
+  play very differently; compare cycle_time across a loadout's weapons if
+  consistency matters, not just the DPS ranking.
 - **Proc lines.** proc_dps_at_zero_rd / proc_dps_slope_per_rd add expected
   on-hit proc damage from three verified damage sources:
   - weapon_damage (exploding): the explosion re-deals the weapon's own

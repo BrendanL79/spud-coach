@@ -33,3 +33,18 @@ section in `evaluate_run` — dataset **schema v4**), the PyPI release
   provenance so horde/elite/endless-only enemies carry a label instead of an
   empty list. Deferred test-hardening minors are logged in the bestiary
   implementation plan/review notes.
+- **Loadout timing/consistency modeling** — player-reported (2026-07-08, not
+  yet source-verified): a loadout of similar-`cycle_time` weapons (e.g.
+  several copies of the same weapon) tends to volley in near-unison, dealing
+  damage in bursts with a shared dead window between; a loadout with
+  staggered `cycle_time`s interleaves attacks for steadier output. Two
+  loadouts with identical summed DPS can play very differently, and
+  `weapon_dps`/`compare_weapons`/`evaluate_run` currently rank by summed DPS
+  alone (see the `read_me` primer's "Attack-timing synchronization is NOT
+  modeled" caveat). Possible shape for a future metric: something like a
+  variance/spread measure over equipped weapons' `cycle_time` (all weapon
+  records already carry it), surfaced as a loadout-level "damage
+  consistency" or "synchronization risk" score alongside the DPS ranking —
+  needs a source-verified model of how per-weapon attack timers actually
+  interact (do they start staggered, sync on reload, etc.) before it can be
+  more than a heuristic.

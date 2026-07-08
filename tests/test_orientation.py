@@ -56,6 +56,16 @@ def test_read_me_mentions_bestiary_scaling():
     assert "randomized" in primer
 
 
+def test_read_me_notes_attack_timing_not_modeled():
+    primer = orientation.read_me_payload(FAKE_DS)["primer"]
+    # DPS is a steady-state average and says nothing about whether a
+    # loadout's attacks land in synchronized bursts (vulnerability windows)
+    # or interleaved (steadier output) — player-reported, not source-verified.
+    assert "synchroniz" in primer.lower()
+    assert "cycle_time" in primer
+    assert "not source-verified" in primer.lower() or "player-reported" in primer.lower()
+
+
 def test_read_me_appears_in_nuance():
     primer = orientation.read_me_payload(FAKE_DS)["primer"]
     # empty appears_in means "not in numbered-wave base groups", not "never spawns"
