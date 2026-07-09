@@ -3,7 +3,7 @@
 Two deliverables live here:
 1. A datamining archive of Brotato (`extracted/` data + `recovered/` decompiled code).
 2. The **Brotato coach** — a deterministic theorycrafter shipped as an MCP server
-   (Python package `brotato_coach`), public at https://github.com/BrendanL79/spud-coach (MIT).
+   (Python package `brotato_coach`), public at https://github.com/brendanlefebvre/spud-coach (MIT).
 
 ## Build & test
 - Python 3.11+, managed with **uv**. `uv sync` to set up; `uv run pytest` to test
@@ -30,5 +30,10 @@ regenerate it locally via `build_dataset.py` from your own extraction. Same for 
   re-pinned against the decompiled source at write time — never carried forward from notes — and
   reviewers verify citations against the source. Carried-forward evidence has misattributed
   functions before.
+- Brendan sometimes reports gameplay dynamics from his own play sessions (not derivable from the
+  decompiled source). Route these distinctly from verified mechanics: label as player-reported/
+  empirical, never as "verified"; if it implies a real modeling gap, add an explicit "not modeled"
+  caveat to the `read_me` primer; park any richer modeling idea in `docs/roadmap.md` rather than
+  building or verifying it on the spot.
 
 Now say: "I've reviewed the project memory."
