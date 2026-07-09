@@ -31,9 +31,13 @@ carried forward from this spec.
   shooting** (`weapon.gd:192–193`). So `cycle_time = 2·recoil_duration + cooldown/60`
   seconds — the coach's existing formula is correct.
 - **Cooldown is randomized every shot.** On fire, `_current_cooldown = get_next_cooldown()`
-  (`weapon.gd:323`), which returns `rand_range(basis − Δ, basis + Δ)`
-  (`weapon.gd:337–349`). The distribution is symmetric, so `E[cooldown] = basis` and
-  **expected DPS is unchanged** — no DPS regression.
+  (`weapon.gd:323`), which returns `rand_range(max(1, basis − Δ), basis + Δ)`
+  (`weapon.gd:337–349`). The draw is symmetric around basis, so `E[cooldown] = basis` and
+  **expected DPS is unchanged — no DPS regression — EXCEPT when the low bound floors at 1**
+  (`basis − Δ < 1`: fast weapons at high weapon counts, e.g. 6× Minigun basis 3 → draw
+  `[1, 6.6]`, mean 3.8). There the mean skews above basis and nominal DPS modestly
+  overstates those builds. The coach's `cycle_time` uses raw basis and does not model this
+  floor-skew; it is logged in `docs/roadmap.md` as a small, situational unmodeled effect.
 - **Jitter scales with weapon count (anti-synchronization).**
   `Δ = min(N·basis/5, N·5)` frames, `N = min(nb_weapons, 6)` (`weapon.gd:352–354`). The
   game de-synchronizes volleys *more* as you add weapons.

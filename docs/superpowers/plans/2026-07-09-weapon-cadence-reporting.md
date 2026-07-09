@@ -721,8 +721,13 @@ which returns `rand_range(max(1, basis - Δ), basis + Δ)` (`weapon.gd:337-349`)
 (`weapon.gd:352-354`). The spread GROWS with weapon count — the engine
 deliberately de-synchronizes volleys, harder the more weapons you carry. The
 first cooldown of a wave uses a basis capped at 180 frames if basis >= 180
-(`weapon.gd:344-345`). The distribution is symmetric, so E[cooldown] = basis
-and **expected DPS is unaffected** — cadence is orthogonal to the DPS numbers.
+(`weapon.gd:344-345`). The draw is symmetric around basis, so E[cooldown] =
+basis and expected DPS is unaffected **except when the low bound floors at 1**
+(`max(1, basis - Δ)`, i.e. basis - Δ < 1 — fast weapons at high weapon counts,
+e.g. a 6x Minigun at basis 3 draws from [1, 6.6], mean 3.8 not 3). There the
+mean skews above basis: those weapons fire slightly slower than basis implies
+and nominal DPS modestly overstates them. The coach's `cycle_time` uses raw
+basis and does not model this floor-skew (see the roadmap).
 
 ## Consequences the coach reports
 
@@ -764,6 +769,26 @@ In `docs/roadmap.md`, replace the "Loadout timing/consistency modeling" entry (`
   (expected fraction of time with zero weapons firing / longest expected gap)
   — a Monte-Carlo estimate, not a spread heuristic — and remains a possible
   future item if demand appears.
+- **Cooldown floor-skew (nominal DPS overstates fast multi-weapon builds)** —
+  the per-shot cooldown is drawn from `rand_range(max(1, basis - Δ), basis + Δ)`
+  (`weapon.gd:337-349`). When `basis - Δ < 1` the low bound floors at 1, skewing
+  the mean cooldown above basis, so the weapon fires slightly slower than basis
+  implies. This binds for fast weapons at high weapon counts (e.g. 6x Minigun,
+  basis 3 -> mean 3.8, ~13% slower). The coach's `cycle_time`/DPS use raw basis
+  and do not model this, so nominal DPS modestly overstates those builds. Small
+  and situational; a corrected effective-cooldown model could fold `E[cooldown]
+  = (1 + basis + Δ)/2` in the floor-binding regime if it proves to matter.
+```
+
+Also add the floor-skew as a bullet under `docs/cadence-mechanics.md`'s
+"Consequences the coach reports" section (after the `gap_range_s` bullet):
+
+```markdown
+- **Floor-skew caveat.** When `basis - Δ < 1` the cooldown draw floors at 1,
+  lifting the mean above basis (fast weapons at high weapon counts). Those
+  weapons fire slightly slower than basis implies; `cycle_time`/DPS use raw
+  basis and do not model this — nominal DPS modestly overstates such builds.
+  See the roadmap.
 ```
 
 - [ ] **Step 4: Verify the docs render and links resolve**
