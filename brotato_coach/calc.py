@@ -35,6 +35,36 @@ def cooldown_jitter(cooldown_basis_frames: float, weapon_count: int) -> tuple[fl
     return (max(1.0, cooldown_basis_frames - delta), cooldown_basis_frames + delta)
 
 
+def cadence_profile(cycle_time: float, total_dps: float,
+                    cooldown_basis_frames: float, weapon_count: int = 1,
+                    burst_reload: bool = False) -> dict:
+    """Per-weapon cadence descriptors decomposing DPS into rate x burst, plus
+    the verified dead-window gap range. See docs/cadence-mechanics.md.
+
+    Invariant: damage_per_attack * attacks_per_second == total_dps.
+    The gap range derives from cooldown_jitter; the recoil portion of the
+    cycle is common to both bounds and cancels, so no separate recoil value
+    is needed. Caller must ensure cycle_time > 0.
+    """
+    aps = 1.0 / cycle_time
+    lo_f, hi_f = cooldown_jitter(cooldown_basis_frames, weapon_count)
+    recoil_term = cycle_time - cooldown_basis_frames / 60.0
+    if aps >= 3.0:
+        label = "sustained"
+    elif aps >= 1.0:
+        label = "moderate"
+    else:
+        label = "bursty"
+    return {
+        "attacks_per_second": aps,
+        "seconds_between_attacks": cycle_time,
+        "damage_per_attack": total_dps * cycle_time,
+        "cadence": label,
+        "gap_range_s": [recoil_term + lo_f / 60.0, recoil_term + hi_f / 60.0],
+        "burst_reload": burst_reload,
+    }
+
+
 def dps_line(base_damage: float, scaling_coef: float, cycle_time: float,
              accuracy: float) -> tuple[float, float]:
     dps0 = base_damage / cycle_time * accuracy
