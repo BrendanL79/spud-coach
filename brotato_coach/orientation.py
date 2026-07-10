@@ -89,15 +89,22 @@ The DPS model is deliberately narrow and honest about it:
   cooldown/60, plus any burst-reload amortization.
 - **Crit is NOT modeled.** crit_chance and crit_damage appear on the record
   but are not folded into any DPS line.
-- **Attack-timing synchronization is NOT modeled.** dps / dps_at_zero_rd is a
-  steady-state AVERAGE — it says nothing about how evenly that damage lands
-  over time. Player-reported (not source-verified): a loadout of
-  similar-cycle_time weapons (e.g. several copies of the same weapon) tends
-  to volley in near-unison — a burst, then a shared dead window with no
-  output — while a loadout with staggered cycle_times interleaves attacks
-  for steadier damage and uptime. Two loadouts with the same summed DPS can
-  play very differently; compare cycle_time across a loadout's weapons if
-  consistency matters, not just the DPS ranking.
+- **Cadence IS surfaced; cross-weapon sync is intentionally not scored.**
+  dps is a steady-state AVERAGE. weapon_dps / compare_weapons / evaluate_run
+  now also return a `cadence` object per weapon: attacks_per_second,
+  damage_per_attack (burst size), a sustained/moderate/bursty label, and
+  gap_range_s — the verified dead-window range between volleys. Slow weapons
+  have long dead windows every cycle (a horde can close during one), and the
+  average hides that; read the cadence, not just the DPS. The engine
+  randomizes each shot's cooldown (rand_range around the base, jitter growing
+  with weapon count) to DE-synchronize volleys — so a loadout of similar
+  weapons does NOT reliably volley in unison, and no cross-weapon
+  "synchronization risk" score is offered (it would mislead). gap_range_s
+  already reflects that weapon-count-scaled jitter.
+- **Burst-reload weapons are bimodal.** Revolver (every 6 shots) and Chain Gun
+  (every 100) fire fast then take a long reload; `burst_reload: true` marks
+  them. attacks_per_second is the average, not the felt fast-then-reload
+  rhythm — flag this when it matters.
 - **Proc lines.** proc_dps_at_zero_rd / proc_dps_slope_per_rd add expected
   on-hit proc damage from three verified damage sources:
   - weapon_damage (exploding): the explosion re-deals the weapon's own

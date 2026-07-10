@@ -76,6 +76,14 @@ def test_read_me_notes_attack_timing_not_modeled():
     assert "not source-verified" in primer.lower() or "player-reported" in primer.lower()
 
 
+def test_primer_describes_verified_cadence_not_unmodeled_sync():
+    primer = orientation.read_me_payload(FAKE_DS)["primer"]
+    assert "attacks_per_second" in primer
+    assert "randomizes each shot's cooldown" in primer
+    # The old misleading blanket claim is gone.
+    assert "Attack-timing synchronization is NOT modeled" not in primer
+
+
 def test_read_me_appears_in_nuance():
     primer = orientation.read_me_payload(FAKE_DS)["primer"]
     # empty appears_in means "not in numbered-wave base groups", not "never spawns"
