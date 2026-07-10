@@ -428,3 +428,19 @@ def test_weapon_record_burn_gate_failure_stays_unmodeled_not_classified():
                               weapon_id="w", name="W", tier=1)
     assert rec["unmodeled_effects"] == ["effect_burning"]
     assert rec["classified_effects"] == []
+
+
+def test_weapon_record_marks_burst_reload_false_for_normal_weapon():
+    rec = build_weapon_record(STATS, DATA, weapon_id="weapon_shredder",
+                              name="Shredder", tier=4)
+    assert rec["burst_reload"] is False
+
+
+def test_weapon_record_marks_burst_reload_true_for_revolver():
+    stats = ('[gd_resource type="Resource" format=2]\n[resource]\n'
+             'cooldown = 11\ndamage = 40\naccuracy = 0.9\nrecoil_duration = 0.1\n'
+             'scaling_stats = [ [ "stat_ranged_damage", 2.0 ] ]\n'
+             'additional_cooldown_every_x_shots = 6\nadditional_cooldown_multiplier = 8.0\n')
+    data = '[gd_resource type="Resource" format=2]\n[resource]\neffects = [  ]\n'
+    rec = build_weapon_record(stats, data, weapon_id="w", name="W", tier=4)
+    assert rec["burst_reload"] is True
