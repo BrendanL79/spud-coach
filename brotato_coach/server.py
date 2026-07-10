@@ -125,7 +125,8 @@ def build_server(ds: dict) -> FastMCP:
     @mcp.tool()
     def weapon_dps(name: str, tier: int, stats: Stats,
                    aoe_enemies_hit: float = 1.0,
-                   character: str | None = None) -> dict[str, Any]:
+                   character: str | None = None,
+                   weapon_count: int = 1) -> dict[str, Any]:
         """Compute one weapon's realized DPS for a given build, with a breakdown.
 
         `dps` = guaranteed line (`base_dps`) + expected on-hit proc damage
@@ -141,16 +142,27 @@ def build_server(ds: dict) -> FastMCP:
         pre-convert with stat_display_value if `character` is omitted. For
         ranking several weapons, use compare_weapons; for merge-order
         questions, use compare_merge_paths.
+
+        `cadence` decomposes DPS into rate x burst: attacks_per_second,
+        damage_per_attack, a cadence label (sustained/moderate/bursty),
+        seconds_between_attacks, and gap_range_s — the verified dead-window
+        range between volleys. gap_range_s widens with `weapon_count` (the
+        engine randomizes cooldowns to de-sync volleys, harder with more
+        weapons); pass your actual equipped count for a real range.
+        burst_reload flags bimodal reload weapons (Revolver, Chain Gun) whose
+        averaged rate hides the fast-then-reload rhythm.
         """
         return _safe(answers.weapon_dps)(ds=ds, name=name, tier=tier,
                                          stats=stats.as_dict(),
                                          aoe_enemies_hit=aoe_enemies_hit,
-                                         character=character)
+                                         character=character,
+                                         weapon_count=weapon_count)
 
     @mcp.tool()
     def compare_weapons(names_with_tiers: list[tuple[str, int]], stats: Stats,
                         aoe_enemies_hit: float = 1.0,
-                        character: str | None = None) -> dict[str, Any]:
+                        character: str | None = None,
+                        weapon_count: int = 1) -> dict[str, Any]:
         """Rank several weapons by realized DPS (guaranteed + expected proc
         damage) at the SAME build stats.
 
@@ -160,12 +172,17 @@ def build_server(ds: dict) -> FastMCP:
         weapon_dps) — pass `character` to convert raw values for you. Returns
         `{"ranking": [...]}` sorted by total DPS descending. Use when the
         player asks 'which of these hits hardest'.
+
+        Each row carries a `cadence` object (see weapon_dps). Pass
+        `weapon_count` = your equipped weapon count so the gap range reflects
+        the engine's weapon-count-scaled cooldown jitter.
         """
         return _safe(lambda **kw: answers.compare_weapons(
             ds, [tuple(x) for x in kw["names_with_tiers"]], kw["stats"],
-            kw["aoe_enemies_hit"], kw["character"]))(
+            kw["aoe_enemies_hit"], kw["character"], kw["weapon_count"]))(
             names_with_tiers=names_with_tiers, stats=stats.as_dict(),
-            aoe_enemies_hit=aoe_enemies_hit, character=character)
+            aoe_enemies_hit=aoe_enemies_hit, character=character,
+            weapon_count=weapon_count)
 
     @mcp.tool()
     def compare_merge_paths(weapon_name: str, path_a: list[int],

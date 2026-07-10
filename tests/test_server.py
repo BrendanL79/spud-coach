@@ -5,7 +5,8 @@ from brotato_coach.server import build_server
 DS = {
     "schema_version": 1, "game_version": "dev", "generated_at": "t",
     "weapons": [{"id": "weapon_minigun", "name": "Minigun", "tier": 4,
-                 "dps_at_zero_rd": 55.5556, "dps_slope_per_rd": 8.3333, "scaling_stats": []}],
+                 "dps_at_zero_rd": 55.5556, "dps_slope_per_rd": 8.3333,
+                 "cycle_time": 0.09, "cooldown": 3, "scaling_stats": []}],
     "items": [], "characters": [], "sets": [], "stat_mechanics": {},
 }
 
@@ -246,6 +247,17 @@ def test_wave_composition_tool():
     result = asyncio.run(_call(build_server(ds), "wave_composition", wave=1))
     assert result["wave"] == 1
     assert result["base_enemies"][0]["enemy_id"] == "baby_alien"
+
+
+def test_weapon_dps_tool_returns_cadence_and_honors_weapon_count():
+    server = build_server(DS)
+    r1 = asyncio.run(_call(server, "weapon_dps", name="Minigun", tier=4,
+                           stats={"ranged_damage": 10}, weapon_count=1))
+    r6 = asyncio.run(_call(server, "weapon_dps", name="Minigun", tier=4,
+                           stats={"ranged_damage": 10}, weapon_count=6))
+    assert r1["cadence"]["cadence"] == "sustained"
+    # gap range widens with weapon count
+    assert r6["cadence"]["gap_range_s"][1] > r1["cadence"]["gap_range_s"][1]
 
 
 def test_get_filter_options_tool_bestiary_fields():
