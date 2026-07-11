@@ -37,7 +37,7 @@ basis and does not model this floor-skew (see the roadmap).
 - `attacks_per_second`, `seconds_between_attacks` — rate of fire.
 - `damage_per_attack = dps * cycle_time` — burst size; the invariant
   `damage_per_attack * attacks_per_second == dps` always holds.
-- `cadence` label: sustained (>= 3/s), moderate (1-3/s), bursty (< 1/s).
+- `cadence` label: sustained (>= 3/s), moderate (1 to <3/s), bursty (< 1/s).
 - `gap_range_s` — the verified min/max seconds between volleys at a given
   weapon count. Streakiness is a PER-WEAPON property: slow weapons have Δ
   capped at N*5 frames (<= 0.5s), so their long dead window barely jitters,

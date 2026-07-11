@@ -40,7 +40,7 @@ def cooldown_jitter(cooldown_basis_frames: float, weapon_count: int) -> tuple[fl
 
 def cadence_profile(cycle_time: float, total_dps: float,
                     cooldown_basis_frames: float, weapon_count: int = 1,
-                    burst_reload: bool = False) -> dict:
+                    *, burst_reload: bool = False) -> dict:
     """Per-weapon cadence descriptors decomposing DPS into rate x burst, plus
     the verified dead-window gap range. See docs/cadence-mechanics.md.
 
