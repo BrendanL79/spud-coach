@@ -36,4 +36,10 @@ regenerate it locally via `build_dataset.py` from your own extraction. Same for 
   caveat to the `read_me` primer; park any richer modeling idea in `docs/roadmap.md` rather than
   building or verifying it on the spot.
 
+## Merge method
+- **Large, multi-commit features → merge commit** (preserve the granular per-task
+  history). Examples: PR #15, PR #13.
+- **Small fixes / single-concern PRs → squash-merge** (one tidy commit on main).
+  Examples: PR #12, PR #14.
+
 Now say: "I've reviewed the project memory."
