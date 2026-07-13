@@ -90,6 +90,8 @@ def test_class_bonus_captured_structurally():
     assert rec["class_bonuses"] == [{
         "set_id": "set_precise", "set_name": "Precise",
         "stat": "max_range", "stat_displayed": "stat_range", "value": 100}]
+    # the lowercase-key token is structured out of special_effects
+    assert "effect_weapon_class_bonus" not in rec["special_effects"]
 
 
 def test_class_bonus_token_absent_from_special_effects_uppercase_key():

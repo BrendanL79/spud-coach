@@ -61,7 +61,9 @@ cadence label, and gap range surfaced on `weapon_dps`, `compare_weapons`, and
   (`calc.dps_line` + `builders/weapons.py:_rd_coefficient`): it consumes only
   ranged_damage, ignoring melee / percent / elemental damage scaling. Origin:
   it was built while grinding Ranger. Consequence: 35 of 36 Precise weapons
-  have a zero RD slope (melee-scaling), so for melee/crit characters like Crazy
+  have a zero RD slope (melee-scaling; verified against the shipped dataset —
+  `dps_slope_per_rd == 0` for 35 of the 36 weapons whose `sets` include
+  Precise), so for melee/crit characters like Crazy
   the `dps(rd)` lines are near-flat constants and class-bonus stats (range,
   attack-speed, lifesteal) cannot enter the line at all. A stat-aware DPS model
   would parameterize by the weapon's real scaling stat and fold in flat/percent

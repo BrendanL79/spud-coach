@@ -51,6 +51,8 @@ def validate_dataset(dataset: dict) -> list[str]:
             problems.append(f"character missing id: {ch.get('name', '<unknown>')}")
         if not isinstance(ch.get("gain_modifiers"), list):
             problems.append(f"character {ch.get('id', '<unknown>')} missing gain_modifiers list")
+        if not isinstance(ch.get("class_bonuses"), list):
+            problems.append(f"character {ch.get('id', '<unknown>')} missing class_bonuses list")
     problems.extend(
         f"set {st.get('id', '<unknown>')} missing bonuses list"
         for st in dataset.get("sets", [])
