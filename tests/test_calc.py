@@ -259,3 +259,46 @@ def test_melee_cycle_point_blank_override():
         weapon_type="melee", recoil_duration=0.1, cooldown=25,
         attack_speed_frac=0.0, max_range=150,
         engagement_distance=0.0) == pytest.approx(0.8166666667)
+
+
+def test_stat_value_mapping():
+    stats = {"melee_damage": 20, "damage": 30}
+    assert calc.stat_value(stats, "stat_melee_damage") == 20
+    assert calc.stat_value(stats, "stat_percent_damage") == 30  # irregular short name
+    assert calc.stat_value(stats, "stat_levels", level=7) == 7
+    assert calc.stat_value(stats, "stat_ranged_damage") == 0.0
+
+
+def test_per_hit_damage_knife_t1_flat_scaling():
+    # weapon_service.gd:489: max(1, 9 + 20*0.8) as int = 25
+    assert calc.per_hit_damage(9, [["stat_melee_damage", 0.8]],
+                               {"melee_damage": 20}) == 25
+
+
+def test_per_hit_damage_truncates_scaling_sum():
+    # 9 + 21*0.8 = 25.8 -> truncates to 25 (same as md=20 — real steppiness)
+    assert calc.per_hit_damage(9, [["stat_melee_damage", 0.8]],
+                               {"melee_damage": 21}) == 25
+
+
+def test_per_hit_damage_percent_bracket_rounds_half_up():
+    # d1=25; 25 * 1.30 = 32.5 -> GDScript round -> 33 (weapon_service.gd:249)
+    assert calc.per_hit_damage(9, [["stat_melee_damage", 0.8]],
+                               {"melee_damage": 20, "damage": 30}) == 33
+
+
+def test_per_hit_damage_floors_at_one():
+    # d1=9; 9 * 0.2 = 1.8 -> round 2; and at -100%: max(1, 0) -> 1
+    assert calc.per_hit_damage(9, [["stat_melee_damage", 0.8]], {"damage": -80}) == 2
+    assert calc.per_hit_damage(9, [["stat_melee_damage", 0.8]], {"damage": -100}) == 1
+
+
+def test_expected_hit_damage_crit_expectation():
+    # cc = 0.2 + 10/100 = 0.3; crit dmg round(32*2.5)=80
+    # (1-0.3)*32 + 0.3*80 = 22.4 + 24 = 46.4
+    assert calc.expected_hit_damage(32, 0.2, 2.5, player_crit_chance=10) == pytest.approx(46.4)
+
+
+def test_expected_hit_damage_crit_clamped_to_certainty():
+    # weapon 0.2 + player 200% -> clamp 1.0 -> always round(32*2.5)=80
+    assert calc.expected_hit_damage(32, 0.2, 2.5, player_crit_chance=200) == pytest.approx(80.0)

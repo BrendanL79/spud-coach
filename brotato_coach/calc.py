@@ -234,3 +234,52 @@ def stat_aware_cycle_time(*, weapon_type: str, recoil_duration: float,
         shooting = 2 * recoil
 
     return shooting + cd / 60
+
+
+# Scaling-stat names are the full stat_* identifiers from the .tres; the
+# coach's stat blocks use short names (Stats schema). One irregular case:
+# the game's stat_percent_damage displays as "% Damage" and the schema calls
+# it `damage`.
+_SHORT_BY_STAT_NAME = {"stat_percent_damage": "damage"}
+
+
+def stat_value(stats: dict, stat_name: str, level: float = 0.0) -> float:
+    """Player-stat value for a full `stat_*` scaling name (0.0 if absent).
+
+    `stat_levels` scales with player level, not a stat
+    (weapon_service.gd:473-474).
+    """
+    if stat_name == "stat_levels":
+        return float(level)
+    short = _SHORT_BY_STAT_NAME.get(stat_name, stat_name.removeprefix("stat_"))
+    return float(stats.get(short, 0.0))
+
+
+def per_hit_damage(base_damage: float, scaling_stats: list, stats: dict, *,
+                   level: float = 0.0, set_bonus_pct: float = 0.0) -> int:
+    """One landed hit's damage before crit, game-exact.
+
+    Step A (weapon_service.gd:489,469): d1 = max(1, base + Σ stat_i*coef_i)
+    truncated to int. Step B (:239-249): d2 = max(1, round(d1 * (set_bonus
+    + 1 + %damage/100))) — GDScript round, half away from zero.
+    `set_bonus_pct` is the weapon-class-bonus percent bucket; the coach passes
+    0 (character class bonuses are advisory — see spec decision 7).
+    """
+    total = sum(stat_value(stats, entry[0], level) * float(entry[1])
+                for entry in scaling_stats or [])
+    d1 = game_int(max(1.0, base_damage + total))
+    bracket = set_bonus_pct / 100 + 1 + stat_value(stats, "stat_percent_damage") / 100
+    return game_int(max(1, game_round(d1 * bracket)))
+
+
+def expected_hit_damage(per_hit: int, weapon_crit_chance: float,
+                        crit_damage: float, player_crit_chance: float = 0.0) -> float:
+    """Expected damage of one landed hit, folding crit as an expectation.
+
+    Total crit chance = weapon base + player stat/100 (weapon_service.gd:253),
+    clamped to [0, 1] (cap defaults to LARGE_NUMBER, player_run_data.gd:436 —
+    effectively uncapped, but a chance saturates at certainty). A crit deals
+    round(damage * crit_damage) (unit.gd:299-300).
+    """
+    cc = min(1.0, max(0.0, weapon_crit_chance + player_crit_chance / 100))
+    return (1 - cc) * per_hit + cc * game_round(per_hit * crit_damage)
