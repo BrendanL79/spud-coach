@@ -158,7 +158,7 @@ constants listed, class bonuses still advisory.
   intentional; goldens are recomputed by hand, not carried forward.
 
 ## Migration / release
-- Rebuild local dataset (current local file is stale: reports game_version 1.1.9.8
-  vs source 1.1.15.4).
+- Rebuild the local dataset at schema v6 (current local file is fresh — v5,
+  game_version 1.1.15.4 — it just predates the schema change).
 - Version bump: minor (breaking dataset schema + tool response shape changes).
 - Large multi-commit feature → merge commit per project convention.
