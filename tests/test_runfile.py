@@ -3,7 +3,7 @@ import json
 import pytest
 
 from brotato_coach.runfile import (
-    RunFormatError, godot_string_hash, load_run, parse_run)
+    RunFormatError, _STAT_KEY_BY_SHORT, godot_string_hash, load_run, parse_run)
 
 
 # Hash constants below are hand-verified against a real Brotato save's
@@ -21,6 +21,14 @@ def test_godot_string_hash_matches_known_stat_hashes():
     assert godot_string_hash("stat_range") == _H["stat_range"]
     assert godot_string_hash("stat_max_hp") == _H["stat_max_hp"]
     assert godot_string_hash("stat_armor") == _H["stat_armor"]
+
+
+def test_percent_damage_uses_real_stat_key():
+    assert _STAT_KEY_BY_SHORT["damage"] == str(godot_string_hash("stat_percent_damage"))
+
+
+def test_level_is_not_an_effects_stat():
+    assert "level" not in _STAT_KEY_BY_SHORT
 
 
 def _sample_run() -> dict:

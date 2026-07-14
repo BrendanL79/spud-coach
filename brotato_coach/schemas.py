@@ -38,6 +38,7 @@ class Stats(BaseModel):
     speed: float | None = None
     luck: float | None = None
     harvesting: float | None = None
+    level: float | None = None  # player level, for stat_levels-scaling weapons
 
     def as_dict(self) -> dict:
         """Plain dict of the stats actually provided (None fields dropped),

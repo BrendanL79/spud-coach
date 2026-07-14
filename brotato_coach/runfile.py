@@ -38,10 +38,12 @@ def godot_string_hash(s: str) -> int:
     return h
 
 
-# short stat name (as the Stats schema / answer layer use) -> hashed effects key
+# short stat name (as the Stats schema / answer layer use) -> hashed effects key.
+# `damage` is the game's stat_percent_damage; `level` is not an effects stat.
+_IRREGULAR_STAT_NAMES = {"damage": "stat_percent_damage"}
 _STAT_KEY_BY_SHORT = {
-    short: str(godot_string_hash(f"stat_{short}"))
-    for short in Stats.model_fields
+    short: str(godot_string_hash(_IRREGULAR_STAT_NAMES.get(short, f"stat_{short}")))
+    for short in Stats.model_fields if short != "level"
 }
 
 
