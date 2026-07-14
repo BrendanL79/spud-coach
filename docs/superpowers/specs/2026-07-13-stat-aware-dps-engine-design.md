@@ -157,6 +157,13 @@ constants listed, class bonuses still advisory.
 - Expected numeric drift vs the old model (crit, melee timing, rounding) is
   intentional; goldens are recomputed by hand, not carried forward.
 
+## Acceptance
+Unit goldens gate the math, but the deliverable is judged end-to-end: Brendan
+converses with an MCP-enabled agent (e.g. the "Brotato MCP" Claude Desktop project)
+against the rebuilt dataset and evaluates whether the advice is coherent and
+stat-aware — melee/crit builds get real answers, `stat_gradient` recommendations
+make in-game sense.
+
 ## Migration / release
 - Rebuild the local dataset at schema v6 (current local file is fresh — v5,
   game_version 1.1.15.4 — it just predates the schema change).
