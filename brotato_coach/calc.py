@@ -188,3 +188,49 @@ def effective_cooldown(cooldown: float, attack_speed_frac: float) -> int:
     if attack_speed_frac < 0:
         return game_int(max(GD_MIN_COOLDOWN, cd * (1 + abs(attack_speed_frac))))
     return game_int(cd)
+
+
+DEFAULT_ENGAGEMENT_DISTANCE = 70.0  # units; melee assumption constant (see spec)
+MELEE_BASE_ATK_DURATION = 0.2      # melee_shooting_data.gd:4
+
+
+def stat_aware_cycle_time(*, weapon_type: str, recoil_duration: float,
+                          cooldown: float, attack_speed_frac: float,
+                          max_range: float = 0.0,
+                          engagement_distance: float | None = None,
+                          burst: tuple[int, float] | None = None) -> float:
+    """Seconds per attack cycle at a given attack speed, game-exact.
+
+    The engine ticks cooldown only while not mid-swing (weapon.gd:193), so
+    cycle = shooting_total_duration + effective_cooldown/60.
+    Ranged shooting = 2*recoil_duration' (ranged_shooting_data.gd:10-15).
+    Melee shooting = atk_duration/2 + back_duration + recoil_duration'
+    (melee_shooting_data.gd:31-32) where atk/back have their own AS terms and
+    atk_duration grows with distance-to-target (range_factor). The default
+    engagement distance min(max_range, 70) is an assumption constant — enemies
+    close in, and a weapon is never credited beyond its own reach.
+    Positive AS divides recoil_duration (weapon_service.gd:230-232); negative
+    AS does NOT lengthen it. Burst reload (Revolver/Chain Gun): every
+    `every`-th cooldown draw is cd*multiplier INSTEAD of cd (weapon.gd:337-339),
+    so the amortized cooldown is cd*((every-1)+multiplier)/every.
+    """
+    asf = attack_speed_frac
+    recoil = recoil_duration / (1 + asf) if asf > 0 else recoil_duration
+    cd = float(effective_cooldown(cooldown, asf))
+    if burst is not None:
+        every_x_shots, multiplier = burst
+        cd = cd * ((every_x_shots - 1) + multiplier) / every_x_shots
+
+    if weapon_type == "melee":
+        dist = min(max_range, DEFAULT_ENGAGEMENT_DISTANCE) \
+            if engagement_distance is None else engagement_distance
+        # melee_shooting_data.gd:23-28
+        range_factor = max(0.0, dist / min(max(70.0 * (1 + asf / 3), 70.0), 120.0))
+        atk_duration = max(0.01, MELEE_BASE_ATK_DURATION - asf / 10) + range_factor * 0.15
+        back_duration = MELEE_BASE_ATK_DURATION / (1 + 3 * asf) if asf > 0 \
+            else MELEE_BASE_ATK_DURATION
+        shooting = atk_duration / 2 + back_duration + recoil
+    else:
+        shooting = 2 * recoil
+
+    return shooting + cd / 60

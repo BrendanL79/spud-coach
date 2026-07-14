@@ -1,5 +1,7 @@
 import math
 
+import pytest
+
 from brotato_coach import calc
 
 
@@ -209,3 +211,51 @@ def test_effective_cooldown_two_frame_floor():
 
 def test_effective_cooldown_zero_as_passthrough():
     assert calc.effective_cooldown(60, 0.0) == 60
+
+
+def test_ranged_cycle_pistol_t1_as0():
+    # Pistol T1: recoil 0.1, cooldown 60 -> 2*0.1 + 60/60 = 1.2 (matches v5 dataset)
+    assert calc.stat_aware_cycle_time(
+        weapon_type="ranged", recoil_duration=0.1, cooldown=60,
+        attack_speed_frac=0.0) == pytest.approx(1.2)
+
+
+def test_ranged_cycle_as_shrinks_recoil_and_cooldown():
+    # AS +50%: recoil 0.1/1.5, cooldown max(2, 60/1.5)=40 -> 0.1333.. + 0.6667.. = 0.8
+    assert calc.stat_aware_cycle_time(
+        weapon_type="ranged", recoil_duration=0.1, cooldown=60,
+        attack_speed_frac=0.5) == pytest.approx(0.8)
+
+
+def test_ranged_cycle_burst_reload_replaces_draw():
+    # weapon.gd:337-339: every 6th draw is cd*mult INSTEAD of cd.
+    # recoil 0.1, cd 12, every 6, mult 5: 0.2 + 12*((6-1)+5)/6/60 = 0.2 + 20/60
+    assert calc.stat_aware_cycle_time(
+        weapon_type="ranged", recoil_duration=0.1, cooldown=12,
+        attack_speed_frac=0.0, burst=(6, 5.0)) == pytest.approx(0.5333333333)
+
+
+def test_melee_cycle_knife_t1_as0():
+    # Knife T1: recoil 0.1, cd 25, max_range 150; default engagement min(150,70)=70
+    # rf=70/70=1 -> atk=0.2+0.15=0.35; back=0.2; shooting=0.175+0.2+0.1=0.475
+    # cycle = 0.475 + 25/60 = 0.891666..
+    assert calc.stat_aware_cycle_time(
+        weapon_type="melee", recoil_duration=0.1, cooldown=25,
+        attack_speed_frac=0.0, max_range=150) == pytest.approx(0.8916666667)
+
+
+def test_melee_cycle_as100_triple_effect():
+    # AS +100%: rf=70/clamp(70*(1+1/3),70,120)=0.75 -> atk=max(.01,.1)+0.1125=0.2125
+    # back=0.2/4=0.05; recoil'=0.05; shooting=0.10625+0.05+0.05=0.20625
+    # eff_cd=int(25/2)=12 -> cycle=0.20625+0.2=0.40625
+    assert calc.stat_aware_cycle_time(
+        weapon_type="melee", recoil_duration=0.1, cooldown=25,
+        attack_speed_frac=1.0, max_range=150) == pytest.approx(0.40625)
+
+
+def test_melee_cycle_point_blank_override():
+    # engagement_distance=0 -> rf=0 -> atk=0.2; shooting=0.1+0.2+0.1=0.4
+    assert calc.stat_aware_cycle_time(
+        weapon_type="melee", recoil_duration=0.1, cooldown=25,
+        attack_speed_frac=0.0, max_range=150,
+        engagement_distance=0.0) == pytest.approx(0.8166666667)
