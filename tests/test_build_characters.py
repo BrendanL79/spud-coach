@@ -67,3 +67,52 @@ def test_set_record_falls_back_to_slug_name_without_translations():
     rec = build_set_record(set_data, {2: eff2}, set_id="set_gun", name="Gun")
     assert rec["display_name"] == "Gun"
     assert rec["description"] == ""
+
+
+EFF_CLASS_BONUS_PRECISE = (
+    '[resource]\nkey = "effect_weapon_class_bonus"\nvalue = 100\n'
+    'set_id = "set_precise"\nstat_displayed_name = "stat_range"\n'
+    'stat_name = "max_range"\n'
+)
+EFF_CLASS_BONUS_UPPER = (
+    '[resource]\nkey = "EFFECT_WEAPON_CLASS_BONUS"\nvalue = 50\n'
+    'set_id = "set_unarmed"\nstat_displayed_name = "stat_attack_speed"\n'
+    'stat_name = "attack_speed_mod"\n'
+)
+
+
+def test_class_bonus_captured_structurally():
+    rec = build_character_record(
+        RANGER_DATA, [EFF_CLASS_BONUS_PRECISE],
+        char_id="character_crazy", name="Crazy",
+        wanted_tags=[], banned_item_groups=[],
+        set_names={"set_precise": "Precise"})
+    assert rec["class_bonuses"] == [{
+        "set_id": "set_precise", "set_name": "Precise",
+        "stat": "max_range", "stat_displayed": "stat_range", "value": 100}]
+    # the lowercase-key token is structured out of special_effects
+    assert "effect_weapon_class_bonus" not in rec["special_effects"]
+
+
+def test_class_bonus_token_absent_from_special_effects_uppercase_key():
+    rec = build_character_record(
+        RANGER_DATA, [EFF_CLASS_BONUS_UPPER],
+        char_id="character_brawler", name="Brawler",
+        wanted_tags=[], banned_item_groups=[])
+    assert rec["special_effects"] == []
+    assert rec["class_bonuses"][0]["set_id"] == "set_unarmed"
+    assert rec["class_bonuses"][0]["value"] == 50
+
+
+def test_class_bonus_set_name_falls_back_to_titlecased_id():
+    rec = build_character_record(
+        RANGER_DATA, [EFF_CLASS_BONUS_PRECISE],
+        char_id="c", name="C", wanted_tags=[], banned_item_groups=[])
+    assert rec["class_bonuses"][0]["set_name"] == "Precise"
+
+
+def test_non_class_character_has_empty_class_bonuses():
+    rec = build_character_record(
+        RANGER_DATA, [EFF_FLAT_RANGE], char_id="c", name="C",
+        wanted_tags=[], banned_item_groups=[])
+    assert rec["class_bonuses"] == []

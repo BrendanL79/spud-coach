@@ -153,6 +153,31 @@ def loadout_set_bonuses(ds: dict, weapon_names: list[str]) -> dict:
     return {"classes": classes, "unknown_weapons": unknown}
 
 
+def character_class_synergy(ds: dict, character: str, weapon_names: list[str]) -> dict:
+    """Which equipped weapons benefit from the character's class bonuses.
+
+    A ClassBonusEffect grants `value` of a stat to weapons of a given set
+    (e.g. Crazy: +100 range to Precise weapons). This joins the character's
+    class_bonuses to `weapon_names` by set membership. Advisory only — it does
+    NOT alter any DPS number (range/attack-speed/lifesteal are not in the
+    RD-only DPS line; see the read_me primer)."""
+    rec = query.get_character(ds, character)
+    bonuses = rec.get("class_bonuses", []) if "id" in rec else []
+    out = []
+    for b in bonuses:
+        matched = []
+        for name in weapon_names:
+            w = query.get_weapon(ds, name)
+            if "matches" in w:
+                w = w["matches"][0]  # set membership is tier-independent
+            if "id" not in w:
+                continue
+            if b.get("set_name") in (w.get("sets") or []):
+                matched.append(w["name"])
+        out.append({**b, "matched_weapons": matched})
+    return {"character": rec.get("name", character), "bonuses": out}
+
+
 def evaluate_run(ds: dict, run: dict) -> dict:
     """One-call run post-mortem: parse a Brotato save and evaluate the whole
     build against the loaded dataset.
@@ -195,6 +220,8 @@ def evaluate_run(ds: dict, run: dict) -> dict:
         for u in set_bonuses.get("unknown_weapons", [])
     )
 
+    class_synergy = character_class_synergy(ds, build["character"], weapon_ids)
+
     item_verdicts = []
     for item_id in build["items"]:
         verdict = evaluate.evaluate_item_for_build(ds, item_id, build["character"], stats)
@@ -222,6 +249,7 @@ def evaluate_run(ds: dict, run: dict) -> dict:
         "weapons": build["weapons"],
         "weapon_dps_ranking": ranking,
         "set_bonuses": set_bonuses,
+        "class_synergy": class_synergy,
         "item_verdicts": item_verdicts,
         "wave_context": wave_ctx,
         "notes": notes,

@@ -69,8 +69,8 @@ def test_shipped_dataset_is_complete():
     assert any(e["text"] for e in hc["effects"])  # effect text_keys resolved
     rg = query.get_character(ds, "Ranger")
     assert rg["display_name"] == "Ranger"
-    # schema_version 4 = enemies + zone_1_waves (3 was 1-indexed item tiers)
-    assert ds["schema_version"] == 4
+    # schema_version 5 = character class_bonuses (4 was enemies + zone_1_waves)
+    assert ds["schema_version"] == 5
 
 
 @pytest.mark.skipif(not os.path.exists(DATA), reason="dataset not built")
@@ -82,3 +82,12 @@ def test_read_me_provenance_complete_on_shipped_dataset():
     line = next(ln for ln in primer.splitlines()
                 if ln.startswith("Dataset: Brotato v"))
     assert "unknown" not in line
+
+
+@pytest.mark.skipif(not os.path.exists(DATA), reason="dataset not built")
+def test_crazy_has_precise_range_class_bonus():
+    ds = json.load(open(DATA, encoding="utf-8"))
+    crazy = next(c for c in ds["characters"] if c["id"] == "character_crazy")
+    assert {"set_id": "set_precise", "set_name": "Precise",
+            "stat": "max_range", "stat_displayed": "stat_range",
+            "value": 100} in crazy["class_bonuses"]

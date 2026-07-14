@@ -1,3 +1,5 @@
+import copy
+
 from brotato_coach import answers
 from brotato_coach.runfile import godot_string_hash
 
@@ -193,3 +195,23 @@ def test_evaluate_run_ranking_has_cadence_at_loadout_count():
     n1 = answers.compare_weapons(
         DS, [("SMG", 1)], {"ranged_damage": 8}, weapon_count=1)["ranking"][0]
     assert smg["cadence"]["gap_range_s"] != n1["cadence"]["gap_range_s"]
+
+
+DS_RANGER_CLASS_BONUS = copy.deepcopy(DS)
+DS_RANGER_CLASS_BONUS["characters"][0]["class_bonuses"] = [
+    {"set_id": "set_gun", "set_name": "Gun", "stat": "damage",
+     "stat_displayed": "stat_damage", "value": 10}]
+
+
+def test_evaluate_run_reports_class_synergy():
+    r = answers.evaluate_run(DS_RANGER_CLASS_BONUS, _run())
+    synergy = r["class_synergy"]
+    assert synergy["character"] == "Ranger"
+    assert synergy["bonuses"][0]["set_name"] == "Gun"
+    # both equipped Gun weapons benefit
+    assert sorted(synergy["bonuses"][0]["matched_weapons"]) == ["Pistol", "SMG"]
+
+
+def test_evaluate_run_class_synergy_empty_without_bonus():
+    r = answers.evaluate_run(DS, _run())
+    assert r["class_synergy"]["bonuses"] == []

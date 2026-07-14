@@ -74,8 +74,10 @@ def build_server(ds: dict) -> FastMCP:
     @mcp.tool()
     def get_character(name: str) -> dict[str, Any]:
         """Look up one character's kit: wanted_tags, banned_item_groups,
-        flat_bonuses, gain_modifiers (stat-gain multipliers), and special_effects.
-        Use this to know what a character wants and can't use before evaluating a build."""
+        flat_bonuses, gain_modifiers (stat-gain multipliers), special_effects,
+        and class_bonuses (conditional per-weapon-set stat bonuses, e.g. Crazy's
+        +100 range to Precise weapons). Use this to know what a character wants
+        and can't use before evaluating a build."""
         return _safe(query.get_character)(ds=ds, name=name)
 
     @mcp.tool()

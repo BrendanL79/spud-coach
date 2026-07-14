@@ -40,6 +40,15 @@ def test_validate_flags_bad_tier():
     assert any("tier" in p for p in problems)
 
 
+def test_validate_flags_missing_class_bonuses():
+    ds = dataset.assemble_dataset(
+        game_version="x", generated_at="t", weapons=[], items=[],
+        characters=[{"id": "character_x", "gain_modifiers": []}],  # no class_bonuses
+        sets=[], enemies=[], zone_1_waves=[])
+    problems = dataset.validate_dataset(ds)
+    assert any("class_bonuses" in p for p in problems)
+
+
 def test_load_missing_dataset_message(tmp_path):
     with pytest.raises(FileNotFoundError, match=re.escape("build_dataset.py")):
         dataset.load_dataset(str(tmp_path / "nope.json"))
@@ -52,8 +61,8 @@ def _minimal(**over):
     return dataset.assemble_dataset(**base)
 
 
-def test_schema_version_is_4():
-    assert _minimal()["schema_version"] == 4
+def test_schema_version_is_5():
+    assert _minimal()["schema_version"] == 5
 
 
 def test_enemies_and_waves_present_in_output():

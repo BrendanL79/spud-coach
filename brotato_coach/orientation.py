@@ -172,6 +172,12 @@ the data itself.
 - weapon_dps / compare_weapons rank by the RD line above — for merge-order
   questions use compare_merge_paths; for whole-run post-mortems pass the
   run.json to evaluate_run.
+- **Class bonuses are build context, not DPS deltas.** A character's
+  class_bonuses (e.g. Crazy's +100 range to Precise weapons) grant a stat to
+  weapons of one set. The RD-only DPS line does NOT consume range,
+  attack-speed, or lifesteal, so these do not move weapon_dps numbers — read
+  them from get_character or evaluate_run's class_synergy section as synergy
+  guidance (favor the boosted set), not as a DPS change.
 - **weapon_dps / compare_weapons need DISPLAYED stats, not raw ones.** A
   run.json's `effects` block stores the RAW pre-gain-modifier accumulator
   (see "Gain modifiers" above) — feeding that straight in silently

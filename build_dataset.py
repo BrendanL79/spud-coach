@@ -119,6 +119,15 @@ def main(argv=None) -> int:
         for e in discover.find_item_dirs(args.extracted)
     ]
 
+    sets = [
+        build_set_record(
+            _read(e["set_data_path"]),
+            {c: _read(p) for c, p in e["count_effect_paths"].items()},
+            set_id=e["set_id"], name=e["name"], tr=tr)
+        for e in discover.find_set_dirs(args.extracted)
+    ]
+    set_names = {s["id"]: s["display_name"] for s in sets}
+
     characters = []
     for e in discover.find_character_dirs(args.extracted):
         data_text = _read(e["data_path"])
@@ -127,15 +136,8 @@ def main(argv=None) -> int:
             data_text, [_read(p) for p in e["effect_paths"]],
             char_id=e["char_id"], name=e["name"],
             wanted_tags=res.get("wanted_tags", []) or [],
-            banned_item_groups=res.get("banned_item_groups", []) or [], tr=tr))
-
-    sets = [
-        build_set_record(
-            _read(e["set_data_path"]),
-            {c: _read(p) for c, p in e["count_effect_paths"].items()},
-            set_id=e["set_id"], name=e["name"], tr=tr)
-        for e in discover.find_set_dirs(args.extracted)
-    ]
+            banned_item_groups=res.get("banned_item_groups", []) or [],
+            tr=tr, set_names=set_names))
 
     enemies = []
     for e in discover.find_enemy_dirs(args.extracted):
