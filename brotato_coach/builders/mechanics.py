@@ -42,7 +42,16 @@ STAT_MECHANICS: dict[str, dict] = {
                                    "get_capped_stat), but the default cap is "
                                    "LARGE_NUMBER (99999999) — effectively "
                                    "infinite until an item sets a real "
-                                   "ceiling."),
+                                   "ceiling. Regardless of that in-game cap, "
+                                   "the DPS engine clamps the combined chance "
+                                   "(weapon base + capped player stat/100) to "
+                                   "[0, 1], since a probability can't exceed "
+                                   "certainty (player_run_data.gd:436, "
+                                   "weapon_service.gd:252-253). Crit is now "
+                                   "folded into DPS as an expectation — "
+                                   "(1-cc)*damage + cc*round(damage*"
+                                   "crit_damage) — not a separate rolled "
+                                   "burst line (see docs/dps-engine.md)."),
     "stat_curse": _m(cap={"cap_key": "curse_cap"}, special="curse_sqrt_penalty",
                      safe_below_zero=True, avoid_positive=True,
                      summary="Positive curse scales enemy damage/HP by a "
@@ -59,7 +68,20 @@ STAT_MECHANICS: dict[str, dict] = {
     "stat_attack_speed": _m(special="attack_speed_universal", never_dead_weight=True,
                             summary="Universal cooldown-reducing multiplier, "
                                     "applied identically to ranged and melee "
-                                    "weapons — never dead weight."),
+                                    "weapons — never dead weight. Melee "
+                                    "weapons ALSO get two extra "
+                                    "attack-speed-sensitive swing terms "
+                                    "ranged weapons don't have "
+                                    "(melee_shooting_data.gd:17-28): the "
+                                    "wind-up (atk_duration) shrinks linearly "
+                                    "by attack_speed/10 (floored at 0.01s), "
+                                    "and the back-swing (back_duration) "
+                                    "divides by (1 + 3*attack_speed) for "
+                                    "positive attack speed — a steeper, "
+                                    "non-linear reduction than the wind-up "
+                                    "term's flat subtraction — while "
+                                    "negative attack speed leaves the "
+                                    "back-swing at its flat 0.2s floor."),
     "knockback": _m(special="knockback_clamped_by_weapon_flag", safe_below_zero=True,
                     safe_at_zero=True,
                     summary="Clamped to non-negative per weapon unless the "

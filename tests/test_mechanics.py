@@ -28,3 +28,21 @@ def test_all_displayed_stats_have_mechanics():
 
 def test_stat_range_projectile_speed_nuance_documented():
     assert "increase_projectile_speed_with_range" in STAT_MECHANICS["stat_range"]["summary"]
+
+
+def test_stat_crit_chance_cap_semantics_documented():
+    summary = STAT_MECHANICS["stat_crit_chance"]["summary"]
+    assert "LARGE_NUMBER" in summary
+    assert "[0, 1]" in summary
+
+
+def test_stat_crit_chance_expectation_documented():
+    summary = STAT_MECHANICS["stat_crit_chance"]["summary"]
+    assert "expectation" in summary or "expected value" in summary
+
+
+def test_stat_attack_speed_melee_extras_documented():
+    summary = STAT_MECHANICS["stat_attack_speed"]["summary"]
+    assert "melee_shooting_data.gd" in summary
+    assert "back-swing" in summary
+    assert "wind-up" in summary

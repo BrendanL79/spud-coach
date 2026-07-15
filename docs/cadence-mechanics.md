@@ -1,18 +1,45 @@
 # Attack cadence mechanics
 
 How the coach models a weapon's *timing*, verified against the decompiled
-source. Companion to `docs/stat-mechanics.md` and `docs/proc-mechanics.md`.
+source. Companion to `docs/stat-mechanics.md`, `docs/proc-mechanics.md`, and
+`docs/dps-engine.md` (the full stat-aware formula chain this timing feeds
+into).
 
-## The attack cycle
+## The attack cycle is stat-aware, and melee differs from ranged
 
-On fire, projectiles spawn immediately, then the weapon enters its recoil
-animation: `set_shooting(true)`, two tweens of `recoil_duration` each, then
-`set_shooting(false)` (`ranged_weapon_shooting_behavior.gd:14-48`). Cooldown
-counts down **only while not shooting** (`weapon.gd:192-193`). So:
+Cooldown counts down **only while not shooting** (`weapon.gd:192-193`), so in
+general `cycle_time = shooting_total_duration + effective_cooldown / 60`
+(seconds; cooldown in frames @60fps), computed by
+`calc.stat_aware_cycle_time` (superseding the old `calc.cycle_time`).
+`effective_cooldown` already folds in attack speed (floors at 2 frames,
+divides by `1+AS` for positive AS, multiplies by `1+|AS|` for negative AS —
+`weapon_service.gd:227-229,570-573`). `shooting_total_duration` is where
+ranged and melee weapons diverge:
 
-    cycle_time = 2 * recoil_duration + cooldown / 60   (seconds; cooldown in frames @60fps)
+- **Ranged** (`ranged_shooting_data.gd:10-15`): fires immediately, then two
+  symmetric recoil tweens (`set_shooting(true)`, two tweens of
+  `recoil_duration` each, then `set_shooting(false)` —
+  `ranged_weapon_shooting_behavior.gd:14-48`):
 
-matching `calc.cycle_time`. Burst-reload weapons add an amortized reload term.
+      shooting = 2 * recoil_duration'   (recoil_duration shrunk by attack speed for AS > 0)
+
+- **Melee** (`melee_shooting_data.gd:17-28`): a wind-up/back-swing pair, both
+  with their own (different) attack-speed sensitivity, plus a term that grows
+  with how far away the target is (`range_factor`):
+
+      shooting = atk_duration/2 + back_duration + recoil_duration'
+
+  Full formulas, the melee-specific attack-speed asymmetry, and the
+  engagement-distance assumption constant are in `docs/dps-engine.md` (step
+  E). This is the mismodeling the old RD-only engine had — it applied the
+  ranged formula to melee swings.
+
+Burst-reload weapons (Revolver, Chain Gun) do not add an extra term on top —
+the game *replaces* one ordinary cooldown draw with `cooldown * multiplier`
+every `every_x_shots`-th shot (`weapon.gd:337-339,357-358`), and the coach
+amortizes that replacement across the cycle count. See "Known limitation:
+burst-reload weapons" below and `docs/dps-engine.md`'s "Burst reload:
+replaces, not adds" for the exact amortization formula.
 
 ## Cooldown is randomized (anti-synchronization)
 

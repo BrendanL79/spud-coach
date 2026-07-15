@@ -20,7 +20,13 @@ section in `evaluate_run` — dataset **schema v4**), **per-weapon cadence
 reporting** (verified `cooldown_jitter` model — attacks/sec, damage/attack,
 cadence label, and gap range surfaced on `weapon_dps`, `compare_weapons`, and
 `evaluate_run`, with burst-reload weapons flagged), the PyPI release
-(`uvx spudcoach`, latest **v0.12.0**), and the official MCP registry listing.
+(`uvx spudcoach`, latest **v0.12.0**), the official MCP registry listing, and
+the **stat-aware, game-exact DPS engine** (dataset schema v6, replacing the
+old RD-only line model) — melee/elemental/engineering scaling, `%damage`,
+attack speed, and crit chance now all move DPS correctly, a `stat_gradient`
+tool ranks which stat to buy next, and `weapon_dps`/`compare_weapons` accept
+a full stat block plus a `loadout` for set-bonus reasoning (see
+`docs/dps-engine.md`).
 
 ## Bigger build
 
@@ -57,14 +63,25 @@ cadence label, and gap range surfaced on `weapon_dps`, `compare_weapons`, and
   and do not model this, so nominal DPS modestly overstates those builds. Small
   and situational; a corrected effective-cooldown model could fold `E[cooldown]
   = (1 + basis + Δ)/2` in the floor-binding regime if it proves to matter.
-- **DPS engine beyond ranged damage** — the DPS model is RD-only
-  (`calc.dps_line` + `builders/weapons.py:_rd_coefficient`): it consumes only
-  ranged_damage, ignoring melee / percent / elemental damage scaling. Origin:
-  it was built while grinding Ranger. Consequence: 35 of 36 Precise weapons
-  have a zero RD slope (melee-scaling; verified against the shipped dataset —
-  `dps_slope_per_rd == 0` for 35 of the 36 weapons whose `sets` include
-  Precise), so for melee/crit characters like Crazy
-  the `dps(rd)` lines are near-flat constants and class-bonus stats (range,
-  attack-speed, lifesteal) cannot enter the line at all. A stat-aware DPS model
-  would parameterize by the weapon's real scaling stat and fold in flat/percent
-  damage — a larger change that touches every weapon number; its own spec.
+- **`nb_projectiles` multiplication** — the stat-aware DPS engine does not
+  multiply a weapon's direct-hit line by its pellet/projectile count. Real
+  DPS from spread weapons depends on how many pellets actually land, which
+  depends on enemy density and positioning with no closed form the engine
+  can evaluate today; a flat multiply would overstate them against a single
+  target. Needs an `aoe_enemies_hit`-style assumption constant, not a
+  straight multiply. See `docs/dps-engine.md`'s "Not modeled" section.
+- **Gradient steps for survivability** — `stat_gradient` ranks stats purely
+  by DPS impact; a stat that matters for survival but not damage (armor,
+  dodge, HP, regen, lifesteal) never appears on its gradient by design. A
+  survivability-focused sibling metric (e.g. expected-damage-taken delta per
+  stat point) would need its own model of incoming damage and enemy
+  behavior — out of scope for this DPS-focused pass but a natural next
+  "which stat should I buy" tool if demand appears.
+- **Class-bonus fold-in as the engine's natural v2** — the engine can now
+  consume per-set weapon-local stat grants via `set_bonus_pct` and stat
+  adjustments (`docs/dps-engine.md`'s step B); `per_hit_damage` already
+  exposes a `set_bonus_pct` parameter for weapon-class-bonus percent grants,
+  just unfed by any caller today. PR #16's advisory character class bonuses
+  (surfaced via `get_character`/`evaluate_run`'s `class_synergy`, e.g.
+  Crazy's +100 range to Precise weapons) graduating from advisory text into
+  actual DPS deltas is the natural next step now that the plumbing exists.
