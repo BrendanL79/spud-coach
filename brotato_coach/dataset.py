@@ -4,9 +4,9 @@ import json
 
 from brotato_coach.builders.mechanics import STAT_MECHANICS
 
-DATASET_VERSION = 5  # was 4 (added character class_bonuses)
+DATASET_VERSION = 6  # was 5 (raw stat-aware weapon fields replace precomputed RD lines)
 
-_REQUIRED_WEAPON_KEYS = ("id", "name", "tier", "dps_slope_per_rd", "dps_at_zero_rd")
+_REQUIRED_WEAPON_KEYS = ("id", "name", "tier", "weapon_type")
 
 
 def assemble_dataset(*, game_version: str, generated_at: str, weapons: list,
