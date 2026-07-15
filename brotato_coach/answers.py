@@ -117,27 +117,48 @@ def compare_weapons(ds: dict, names_with_tiers: list, stats: dict,
 
 
 def compare_merge_paths(ds: dict, weapon_name: str, path_a: list, path_b: list,
-                        rd_range: tuple = (0, 100)) -> dict:
-    def path_line(tiers: list) -> tuple[float, float] | None:
-        lines = []
+                        rd_range: tuple = (0, 100), stats: dict | None = None) -> dict:
+    """Compare two tier-merge paths across the ranged-damage range at an
+    otherwise-fixed stat block (default all-zero). Game-exact DPS is a step
+    function of RD, so the crossover is the first integer RD in the range
+    where the high-end winner weakly overtakes — not an algebraic intersection.
+    """
+    base_stats = dict(stats or {})
+
+    def total(tiers: list, rd: int) -> float | None:
+        s = dict(base_stats, ranged_damage=rd)
+        acc = 0.0
         for t in tiers:
             rec = _weapon_at(ds, weapon_name, t)
             if rec is None:
                 return None
-            lines.append((rec["dps_at_zero_rd"] + rec.get("proc_dps_at_zero_rd", 0.0),
-                          rec["dps_slope_per_rd"] + rec.get("proc_dps_slope_per_rd", 0.0)))
-        return calc.sum_lines(lines)
+            acc += calc.weapon_dps_profile(rec, s)["dps"]
+        return acc
 
-    line_a, line_b = path_line(path_a), path_line(path_b)
-    if line_a is None or line_b is None:
+    lo, hi = int(rd_range[0]), int(rd_range[1])
+    a_lo, b_lo = total(path_a, lo), total(path_b, lo)
+    if a_lo is None or b_lo is None:
         return {"error": "not_found",
                 "did_you_mean": query.suggest(ds["weapons"], weapon_name)}
+    a_hi, b_hi = total(path_a, hi), total(path_b, hi)
 
-    result = calc.compare_lines(line_a, line_b, rd_range[0], rd_range[1])
-    return {
-        "weapon": weapon_name, "path_a": path_a, "path_b": path_b,
-        "line_a": line_a, "line_b": line_b, **result,
-    }
+    def _winner(a: float, b: float) -> str:
+        if abs(a - b) < 1e-9:
+            return "tie"
+        return "a" if a > b else "b"
+
+    result = {"weapon": weapon_name, "path_a": path_a, "path_b": path_b,
+              "dps_a_at_range_ends": [a_lo, a_hi],
+              "dps_b_at_range_ends": [b_lo, b_hi]}
+    w_lo, w_hi = _winner(a_lo, b_lo), _winner(a_hi, b_hi)
+    if w_lo == w_hi or w_lo == "tie":
+        return {**result, "winner": w_hi, "rd_independent": True, "crossover_rd": None}
+    for rd in range(lo + 1, hi + 1):
+        a, b = total(path_a, rd), total(path_b, rd)
+        overtaken = b >= a if w_hi == "b" else a >= b
+        if overtaken:
+            return {**result, "winner": None, "rd_independent": False, "crossover_rd": rd}
+    return {**result, "winner": w_hi, "rd_independent": True, "crossover_rd": None}
 
 
 def explain_stat(ds: dict, stat: str) -> dict:

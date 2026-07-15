@@ -44,19 +44,25 @@ SHREDDER_T4 = {
                       "enemies_hit": 1.0, "multiplier": 1.0}],
 }
 
+LASER_T1 = {
+    "id": "weapon_laser", "name": "Laser", "tier": 1,
+    "sets": [], "effects": [], "unmodeled_effects": [],
+    "classified_effects": [], "burst_reload": False, "nb_projectiles": 1,
+    "weapon_type": "ranged", "base_damage": 12.0, "cooldown": 60.0,
+    "recoil_duration": 0.1, "attack_speed_mod": 0.0, "accuracy": 1.0,
+    "crit_chance": 0.0, "crit_damage": 0.0, "max_range": 400.0,
+    "scaling_stats": [["stat_ranged_damage", 1.0]],
+    "additional_cooldown_every_x_shots": -1, "additional_cooldown_multiplier": -1.0,
+    "proc_effects": [],
+}
+
+LASER_T2 = {
+    **LASER_T1, "tier": 2, "base_damage": 30.0,
+}
+
 DS = {
     "weapons": [
-        KNIFE_T1, PISTOL_T1, SHREDDER_T4,
-        # Old-style precomputed-line records: compare_merge_paths (untouched
-        # by this task) still reads dps_at_zero_rd/dps_slope_per_rd directly.
-        {"id": "weapon_laser", "name": "Laser", "tier": 2,
-         "dps_at_zero_rd": 30.0, "dps_slope_per_rd": 1.8, "scaling_stats": []},
-        {"id": "weapon_laser", "name": "Laser", "tier": 3,
-         "dps_at_zero_rd": 45.0, "dps_slope_per_rd": 2.7, "scaling_stats": []},
-        {"id": "weapon_laser", "name": "Laser", "tier": 1,
-         "dps_at_zero_rd": 15.0, "dps_slope_per_rd": 0.9,
-         "proc_dps_at_zero_rd": 3.0, "proc_dps_slope_per_rd": 0.1,
-         "scaling_stats": []},
+        KNIFE_T1, PISTOL_T1, SHREDDER_T4, LASER_T1, LASER_T2,
     ],
     "characters": [
         {"id": "character_ranger", "name": "Ranger",
@@ -124,11 +130,18 @@ def test_compare_weapons_rows_carry_dps_breakdown():
     assert rows["Pistol"]["proc_dps"] == 0.0
 
 
-def test_compare_merge_paths_crossover_reported():
-    # path_a = II+II (two tier-2), path_b = III+I (tier-3 + tier-1)
-    result = answers.compare_merge_paths(DS, "Laser", [2, 2], [3, 1])
-    # II+II line: (60.0, 3.6); III+I line: (60.0, 3.6) -> effectively tie
-    assert "crossover_rd" in result
+def test_merge_paths_crossover_at_rd6():
+    # one T2 (base 30) vs two T1 (base 12), ct 1.2 both:
+    # rd0: 25.0 vs 20.0 (A); rd6: 30.0 vs 30.0 (first B>=A); rd100: B wins
+    r = answers.compare_merge_paths(DS, "Laser", [2], [1, 1])
+    assert r["crossover_rd"] == 6
+    assert r["rd_independent"] is False
+
+
+def test_merge_paths_dominant_path():
+    r = answers.compare_merge_paths(DS, "Laser", [1], [1, 1])
+    assert r["winner"] == "b"
+    assert r["rd_independent"] is True
 
 
 def test_explain_stat_known():
@@ -193,13 +206,6 @@ def test_weapon_dps_records_without_proc_fields_still_work():
     result = answers.weapon_dps(DS, "Pistol", 1, {"ranged_damage": 10})
     assert result["proc_dps"] == 0.0
     assert math.isclose(result["dps"], result["base_dps"])
-
-
-def test_compare_merge_paths_includes_proc_lines():
-    result = answers.compare_merge_paths(DS, "Laser", [2, 2], [3, 1])
-    # path_b = T3 (45, 2.7) + T1 (15+3, 0.9+0.1) = (63.0, 3.7)
-    assert math.isclose(result["line_b"][0], 63.0)
-    assert math.isclose(result["line_b"][1], 3.7)
 
 
 def test_compare_merge_paths_not_found_suggests_display_name():
