@@ -6,14 +6,25 @@ from brotato_coach.runfile import godot_string_hash
 # A synthetic dataset with just enough to exercise every composed analysis:
 # two Gun-class weapons (for DPS ranking + set progress), one item with a
 # ranged-damage effect (for the per-item verdict), and the Ranger.
+#
+# Raw stat-aware fields (schema v6): base_damage 1.0 + 1.0x ranged_damage per
+# hit (int, no crit/percent-damage modifiers here) over cycle_time = 2 x
+# recoil_duration + cooldown/60. SMG: ct = 0.2 + 18/60 = 0.5s -> dps = per_hit
+# / 0.5. Pistol: ct = 0.2 + 48/60 = 1.0s -> dps = per_hit / 1.0. At RD 8:
+# SMG per_hit 9 -> dps 18.0; Pistol per_hit 9 -> dps 9.0 (same golden values
+# the old precomputed-line fixture produced, by construction).
 DS = {
     "weapons": [
         {"id": "weapon_smg", "name": "SMG", "tier": 1, "sets": ["Gun"],
-         "dps_at_zero_rd": 10.0, "dps_slope_per_rd": 1.0,
-         "cycle_time": 0.3, "cooldown": 12, "scaling_stats": []},
+         "weapon_type": "ranged", "base_damage": 1.0, "cooldown": 18.0,
+         "recoil_duration": 0.1, "accuracy": 1.0, "crit_chance": 0.0,
+         "crit_damage": 0.0, "max_range": 300.0,
+         "scaling_stats": [["stat_ranged_damage", 1.0]], "proc_effects": []},
         {"id": "weapon_pistol", "name": "Pistol", "tier": 1, "sets": ["Gun"],
-         "dps_at_zero_rd": 5.0, "dps_slope_per_rd": 0.5,
-         "cycle_time": 0.6, "cooldown": 30, "scaling_stats": []},
+         "weapon_type": "ranged", "base_damage": 1.0, "cooldown": 48.0,
+         "recoil_duration": 0.1, "accuracy": 1.0, "crit_chance": 0.0,
+         "crit_damage": 0.0, "max_range": 300.0,
+         "scaling_stats": [["stat_ranged_damage", 1.0]], "proc_effects": []},
     ],
     "items": [
         {"id": "item_dynamite", "name": "Dynamite", "tags": ["explosive"],
@@ -94,8 +105,8 @@ def test_evaluate_run_realized_stats_reflect_gain_modifier():
 
 def test_evaluate_run_ranks_weapons_at_displayed_stats_not_raw():
     r = answers.evaluate_run(DS_RANGER_GAIN, _run(stats={"ranged_damage": 8}))
-    # SMG at displayed RD 12: 10 + 1.0*12 = 22 (would be 18 at raw RD 8)
-    assert r["weapon_dps_ranking"][0]["dps"] == 22.0
+    # SMG at displayed RD 12: per_hit 1+12=13 / ct 0.5 = 26 (would be 18 at raw RD 8)
+    assert r["weapon_dps_ranking"][0]["dps"] == 26.0
 
 
 def test_evaluate_run_reports_character_and_context():

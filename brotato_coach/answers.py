@@ -24,35 +24,69 @@ def display_stats(ds: dict, character: str, raw_stats: dict) -> dict:
     return out
 
 
+def _merge_set_bonus_stats(stats: dict, active: list[dict]) -> dict:
+    """Fold active set-bonus stat grants (full stat_* keys) into a short-name
+    stat block. Only used when the caller opts in — screen/save stats already
+    include these grants in-game."""
+    out = dict(stats)
+    for bonus in active:
+        eff = bonus.get("effect") or {}
+        key, value = eff.get("key"), eff.get("value")
+        if not key or value is None:
+            continue
+        short = calc._SHORT_BY_STAT_NAME.get(key, str(key).removeprefix("stat_"))
+        out[short] = float(out.get(short, 0)) + float(value)
+    return out
+
+
 def weapon_dps(ds: dict, name: str, tier: int, stats: dict,
                aoe_enemies_hit: float = 1.0, character: str | None = None,
-               weapon_count: int = 1) -> dict:
+               weapon_count: int = 1, engagement_distance: float | None = None,
+               loadout: list[str] | None = None,
+               apply_set_bonuses: bool = False) -> dict:
     rec = query.get_weapon(ds, name, tier=tier)
     if "id" not in rec:
         return rec
     if character is not None:
         stats = display_stats(ds, character, stats)
-    rd = float(stats.get("ranged_damage", 0))
-    base = calc.dps_at(rec["dps_at_zero_rd"], rec["dps_slope_per_rd"], rd)
-    proc = aoe_enemies_hit * calc.dps_at(rec.get("proc_dps_at_zero_rd", 0.0),
-                                         rec.get("proc_dps_slope_per_rd", 0.0), rd)
-    total = base + proc
+
+    active_bonuses: list[dict] = []
+    if loadout:
+        for cls in loadout_set_bonuses(ds, loadout)["classes"]:
+            active_bonuses.extend(cls["active"])
+        if apply_set_bonuses:
+            stats = _merge_set_bonus_stats(stats, active_bonuses)
+
+    profile = calc.weapon_dps_profile(
+        rec, stats, level=float(stats.get("level", 0)),
+        aoe_enemies_hit=aoe_enemies_hit,
+        engagement_distance=engagement_distance)
+
+    assumptions = {"aoe_enemies_hit": aoe_enemies_hit,
+                   "set_bonuses_applied": bool(loadout and apply_set_bonuses)}
+    if profile["engagement_distance_used"] is not None:
+        assumptions["engagement_distance"] = profile["engagement_distance_used"]
+    if loadout:
+        assumptions["active_set_bonuses"] = active_bonuses
+
     result = {
-        "name": rec["name"], "tier": tier, "ranged_damage": rd,
-        "dps": total, "base_dps": base, "proc_dps": proc,
+        "name": rec["name"], "tier": tier,
+        "dps": profile["dps"], "base_dps": profile["base_dps"],
+        "proc_dps": profile["proc_dps"],
         "unmodeled_effects": rec.get("unmodeled_effects", []),
         "breakdown": {
-            "dps_at_zero_rd": rec["dps_at_zero_rd"],
-            "dps_slope_per_rd": rec["dps_slope_per_rd"],
-            "proc_dps_at_zero_rd": rec.get("proc_dps_at_zero_rd", 0.0),
-            "proc_dps_slope_per_rd": rec.get("proc_dps_slope_per_rd", 0.0),
-            "aoe_enemies_hit": aoe_enemies_hit,
+            "per_hit_damage": profile["per_hit_damage"],
+            "expected_hit_damage": profile["expected_hit_damage"],
+            "cycle_time": profile["cycle_time"],
+            "crit_chance_total": profile["crit_chance_total"],
+            "scaling_stats": rec.get("scaling_stats", []),
         },
+        "assumptions": assumptions,
     }
-    ct = float(rec.get("cycle_time", 0.0) or 0.0)
-    if ct > 0:
+    if profile["cycle_time"] > 0:
         result["cadence"] = calc.cadence_profile(
-            ct, total, float(rec.get("cooldown", 0.0)),
+            profile["cycle_time"], profile["dps"],
+            float(profile["effective_cooldown_frames"]),
             weapon_count=weapon_count,
             burst_reload=bool(rec.get("burst_reload", False)))
     return result
@@ -60,13 +94,17 @@ def weapon_dps(ds: dict, name: str, tier: int, stats: dict,
 
 def compare_weapons(ds: dict, names_with_tiers: list, stats: dict,
                     aoe_enemies_hit: float = 1.0, character: str | None = None,
-                    weapon_count: int = 1) -> dict:
+                    weapon_count: int = 1, engagement_distance: float | None = None,
+                    loadout: list[str] | None = None,
+                    apply_set_bonuses: bool = False) -> dict:
     if character is not None:
         stats = display_stats(ds, character, stats)
     rows = []
     for name, tier in names_with_tiers:
         r = weapon_dps(ds, name, tier, stats, aoe_enemies_hit,
-                       weapon_count=weapon_count)
+                       weapon_count=weapon_count,
+                       engagement_distance=engagement_distance,
+                       loadout=loadout, apply_set_bonuses=apply_set_bonuses)
         if "dps" in r:
             row = {"name": r["name"], "tier": tier, "dps": r["dps"],
                    "base_dps": r["base_dps"], "proc_dps": r["proc_dps"],
