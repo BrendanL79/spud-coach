@@ -96,9 +96,24 @@ def find_weapon_dirs(extracted_root: str) -> list[dict]:
             if not tier_name.isdigit():
                 continue
             weapon_folder = os.path.basename(os.path.dirname(tier_dir))
-            stats = sorted(
-                p for p in glob.glob(os.path.join(tier_dir, "*_stats.tres"))
-                if not os.path.basename(p).endswith("_proj_stats.tres"))
+            # The weapon's own stats file always follows one of two exact
+            # naming forms: "{folder}_{tier}_stats.tres" (most tiers) or the
+            # bare "{folder}_stats.tres" (observed for some tier-1 dirs, e.g.
+            # torch/1/, pruner/1/). Companion stats files -- a projectile's
+            # "_proj_stats.tres" (Sniper Gun, fixed by d06e78c), a turret
+            # companion's "_garden_stats.tres" (Pruner tiers 2-4), and future
+            # variants we haven't seen yet -- always insert an extra word
+            # before "_stats.tres", so they never match either exact form.
+            # This is a whitelist, not a blocklist: it generalizes to new
+            # companion suffixes instead of requiring a new exclusion each
+            # time one is discovered.
+            stats = [
+                p for p in (
+                    os.path.join(tier_dir, f"{weapon_folder}_{tier_name}_stats.tres"),
+                    os.path.join(tier_dir, f"{weapon_folder}_stats.tres"),
+                )
+                if os.path.isfile(p)
+            ]
             data = sorted(
                 p for p in glob.glob(os.path.join(tier_dir, "*_data.tres"))
                 if not os.path.basename(p).endswith("_burning_data.tres"))

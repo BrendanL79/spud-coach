@@ -264,8 +264,12 @@ def test_find_weapon_dirs_stats_glob_skips_proj_stats_companion(tmp_path):
     # projectile's stats). The latter also matches "*_stats.tres", and on
     # some filesystems unsorted glob order picked it first, corrupting the
     # shipped weapon_sniper_gun record (wrong base_damage, cooldown,
-    # max_range, scaling_stats, recoil_duration). The stats glob must
-    # exclude "*_proj_stats.tres".
+    # max_range, scaling_stats, recoil_duration). The stats selection must
+    # pick the file matching the weapon's exact expected filename rather
+    # than any-match-of-"*_stats.tres" -- see the sibling
+    # test_find_weapon_dirs_stats_glob_skips_garden_stats_companion below
+    # for a second, independently confirmed instance of this bug class
+    # (Pruner) that a narrower "*_proj_stats.tres"-only exclusion would miss.
     wdir = tmp_path / "weapons" / "ranged" / "sniper_gun" / "3"
     wdir.mkdir(parents=True)
     (wdir / "sniper_gun_3_proj_stats.tres").write_text("proj stats")
@@ -278,6 +282,31 @@ def test_find_weapon_dirs_stats_glob_skips_proj_stats_companion(tmp_path):
     assert len(found) == 1
     assert found[0]["stats_path"].endswith("sniper_gun_3_stats.tres")
     assert not found[0]["stats_path"].endswith("proj_stats.tres")
+
+
+def test_find_weapon_dirs_stats_glob_skips_garden_stats_companion(tmp_path):
+    # Regression: a second, independently confirmed instance of the same bug
+    # class as the Sniper Gun case above. Pruner's tier 2-4 dirs hold both
+    # "pruner_{tier}_stats.tres" (the real melee weapon's own stats,
+    # script=melee_weapon_stats.gd) and a "pruner_{tier}_garden_stats.tres"
+    # companion (a "garden zapper" ranged turret companion,
+    # script=ranged_weapon_stats.gd, damage=0). The latter also matches
+    # "*_stats.tres" and was shipping in place of the real weapon's data.
+    # A blocklist that only excludes "_proj_stats.tres" misses this one --
+    # the fix must be a whitelist (exact filename match), not a blocklist,
+    # so it generalizes to companion suffixes we haven't enumerated.
+    wdir = tmp_path / "weapons" / "melee" / "pruner" / "2"
+    wdir.mkdir(parents=True)
+    (wdir / "pruner_2_garden_stats.tres").write_text("garden turret companion stats")
+    (wdir / "pruner_2_stats.tres").write_text("real melee weapon stats")
+    (wdir / "pruner_2_data.tres").write_text(
+        '[gd_resource type="Resource" format=2]\n[resource]\n'
+        'effects = [ ]\n', encoding="utf-8")
+
+    found = find_weapon_dirs(str(tmp_path))
+    assert len(found) == 1
+    assert found[0]["stats_path"].endswith("pruner_2_stats.tres")
+    assert not found[0]["stats_path"].endswith("garden_stats.tres")
 
 
 def test_find_enemy_dirs(tmp_path):
