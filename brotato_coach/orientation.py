@@ -138,7 +138,13 @@ not a baseline figure you have to hand-scale yourself:
     with elemental damage genuinely grows with elemental damage instead of
     reporting a flat baseline number. Re-ignition refreshes (max-based),
     never stacks; the line assumes steady-state (continuous attacking
-    keeps the burn up).
+    keeps the burn up). CAVEAT: that steady-state eligibility is decided
+    at dataset-build time from the weapon's zero-attack-speed cycle time,
+    so it can be wrong in both directions at runtime — heavily NEGATIVE
+    attack speed slows the cycle past the burn window and the static line
+    then overstates burn uptime, while burns with chance < 100% are
+    excluded entirely even though a fast weapon proccing at, say, 50%
+    sustains real burn DPS the model reports as zero.
   - companion_ranged_stats (lightning/spawned projectiles): spawned
     projectiles carry their OWN damage and scaling, independent of the host
     weapon. Targeted chains assume the nominal chain fully connects

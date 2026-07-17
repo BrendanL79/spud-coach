@@ -75,6 +75,16 @@ def test_primer_describes_verified_cadence_not_unmodeled_sync():
     assert "Attack-timing synchronization is NOT modeled" not in primer
 
 
+def test_primer_caveats_burn_uptime_gating():
+    primer = orientation.read_me_payload(FAKE_DS)["primer"]
+    # Burn steady-state eligibility is decided at BUILD time from zero-AS
+    # cycle time; runtime attack speed never re-gates it, so callers must
+    # know the two directions the static line can be wrong.
+    assert "zero-attack-speed" in primer
+    assert "overstates burn uptime" in primer
+    assert "chance < 100%" in primer
+
+
 def test_read_me_appears_in_nuance():
     primer = orientation.read_me_payload(FAKE_DS)["primer"]
     # empty appears_in means "not in numbered-wave base groups", not "never spawns"

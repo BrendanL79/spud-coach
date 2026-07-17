@@ -70,6 +70,22 @@ a full stat block plus a `loadout` for set-bonus reasoning (see
   can evaluate today; a flat multiply would overstate them against a single
   target. Needs an `aoe_enemies_hit`-style assumption constant, not a
   straight multiply. See `docs/dps-engine.md`'s "Not modeled" section.
+- **Runtime-aware burn uptime** (deferred from CodeRabbit's PR #17 review) —
+  burn-proc eligibility is a build-time gate in
+  `brotato_coach/builders/weapons.py`: a burn ships as a `burn_dot` proc only
+  if `chance == 1.0` and the weapon's ZERO-attack-speed cycle time fits inside
+  the burn window (`duration * tick_interval`). Runtime attack speed never
+  re-gates it, so (a) heavily negative-AS builds can stretch the cycle past
+  the window and the static line overstates burn uptime, and (b) chance < 1.0
+  burns are dropped entirely even when a fast weapon proccing at 50% sustains
+  real burn DPS. A proper fix moves the gate into `calc.py` at query time:
+  compute uptime from the stat-adjusted cycle time and expected re-ignition
+  rate (`chance` per hit), scaling the burn line by
+  `min(1, window / (cycle_time / chance))`-style coverage instead of a binary
+  include/exclude. Deferred because it changes the proc descriptor schema
+  (burn procs would need chance + window carried through) and deserves its
+  own hand-verified test vectors; the primer's burn caveat covers the gap
+  advisorily meanwhile.
 - **Gradient steps for survivability** — `stat_gradient` ranks stats purely
   by DPS impact; a stat that matters for survival but not damage (armor,
   dodge, HP, regen, lifesteal) never appears on its gradient by design. A
