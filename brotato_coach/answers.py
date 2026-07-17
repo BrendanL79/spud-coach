@@ -182,6 +182,8 @@ def stat_gradient(ds: dict, weapons: list, stats: dict, step: float = 10.0,
     step of 10 is deliberate: the game's integer damage arithmetic makes a
     ±1 delta frequently zero and unrepresentative.
     """
+    if step <= 0:
+        return {"error": "invalid_step", "note": "step must be > 0"}
     if character is not None:
         stats = display_stats(ds, character, stats)
     recs = []
@@ -191,6 +193,11 @@ def stat_gradient(ds: dict, weapons: list, stats: dict, step: float = 10.0,
             return {"error": "not_found",
                     "did_you_mean": query.suggest(ds["weapons"], name)}
         recs.append(rec)
+    if not recs:
+        # No weapons ⇒ nothing scales; an empty gradient beats three all-zero
+        # rows whose crit "saturated" flag would be vacuously True (all([])).
+        return {"baseline_dps": 0.0, "step": step, "gradient": [],
+                "note": "no weapons in loadout — nothing to rank"}
 
     def total(s: dict) -> float:
         return sum(calc.weapon_dps_profile(

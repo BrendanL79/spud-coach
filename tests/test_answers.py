@@ -192,6 +192,18 @@ def test_stat_gradient_flags_saturated_crit():
     assert by_stat["crit_chance"]["saturated"] is True
 
 
+def test_stat_gradient_rejects_nonpositive_step():
+    for step in (0, -10):
+        r = answers.stat_gradient(DS, [("Knife", 1)], {}, step=step)
+        assert r["error"] == "invalid_step"
+
+
+def test_stat_gradient_empty_loadout_yields_empty_gradient():
+    r = answers.stat_gradient(DS, [], {"melee_damage": 20})
+    assert r["baseline_dps"] == 0.0
+    assert r["gradient"] == []
+
+
 def test_explain_stat_known():
     result = answers.explain_stat(DS, "stat_attack_speed")
     assert result["never_dead_weight"] is True
