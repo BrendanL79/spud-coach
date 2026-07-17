@@ -101,7 +101,20 @@ def test_parse_run_recovers_realized_stats_by_hash():
         "range": 80,
         "max_hp": 13,
         "armor": 2,
+        "level": 3,
     }
+
+
+def test_parse_run_includes_player_level_in_stats():
+    # current_level lives on the player dict, not in effects; stat_levels
+    # scaling weapons need it in the stats block
+    assert parse_run(_sample_run())["stats"]["level"] == 3
+
+
+def test_parse_run_omits_level_when_save_lacks_it():
+    run = _sample_run()
+    del run["current_run_state"]["players_data"][0]["current_level"]
+    assert "level" not in parse_run(run)["stats"]
 
 
 def test_parse_run_rejects_unrecognized_structure():

@@ -78,9 +78,15 @@ def _items(player: dict) -> list[str]:
 
 def _stats(player: dict) -> dict:
     effects = player.get("effects", {}) or {}
-    return {short: effects[key]
-            for short, key in _STAT_KEY_BY_SHORT.items()
-            if key in effects}
+    out = {short: effects[key]
+           for short, key in _STAT_KEY_BY_SHORT.items()
+           if key in effects}
+    # level is not an effects stat — it lives on the player dict directly, but
+    # the answer layer reads it from the stats block (stat_levels scaling).
+    level = player.get("current_level")
+    if level is not None:
+        out["level"] = level
+    return out
 
 
 def _context(run: dict, player: dict) -> dict:

@@ -119,7 +119,18 @@ def test_evaluate_run_reports_character_and_context():
 
 def test_evaluate_run_passes_through_realized_stats():
     r = answers.evaluate_run(DS, _run(stats={"ranged_damage": 8, "range": 80}))
-    assert r["realized_stats"] == {"ranged_damage": 8, "range": 80}
+    assert r["realized_stats"] == {"ranged_damage": 8, "range": 80, "level": 3}
+
+
+def test_evaluate_run_feeds_save_level_into_stat_levels_scaling():
+    # SMG rescaled to stat_levels: per_hit = 1 + 1.0 x level. The save's
+    # current_level 3 must reach the DPS math -> per_hit 4 / ct 0.5 = 8.0
+    # (a dropped level would yield 2.0).
+    ds = copy.deepcopy(DS)
+    ds["weapons"][0]["scaling_stats"] = [["stat_levels", 1.0]]
+    r = answers.evaluate_run(ds, _run(weapons=[{"weapon_id": "weapon_smg", "tier": "0"}],
+                                      stats={}))
+    assert r["weapon_dps_ranking"][0]["dps"] == 8.0
 
 
 def test_evaluate_run_ranks_weapon_dps_at_realized_stats():
