@@ -182,7 +182,7 @@ def test_evaluate_run_tool_from_inline_json():
                                run_json=_minimal_run()))
     assert result["run"]["character"] == "Ranger"
     assert result["run"]["wave"] == 5
-    assert result["realized_stats"] == {"ranged_damage": 12}
+    assert result["realized_stats"] == {"ranged_damage": 12, "level": 4}
     assert result["weapon_dps_ranking"][0]["name"] == "SMG"
 
 
