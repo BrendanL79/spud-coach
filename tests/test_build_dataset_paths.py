@@ -33,3 +33,31 @@ def test_stamp_sources_sets_base_on_every_record():
     build_dataset._stamp_sources(weapons, enemies, [])
     assert all(r["source"] == "base" for r in weapons)
     assert enemies[0]["source"] == "base"
+
+
+def test_has_blocking_issues_true_on_new_tree():
+    import build_dataset
+    coverage = {"unclaimed_trees": ["abyssal"], "unknown_weapon_kinds": [], "unmodeled_zones": []}
+    assert build_dataset._has_blocking_issues(coverage, {}) is True
+
+
+def test_has_blocking_issues_true_on_unmodeled_effect():
+    import build_dataset
+    empty = {"unclaimed_trees": [], "unknown_weapon_kinds": [], "unmodeled_zones": []}
+    assert build_dataset._has_blocking_issues(empty, {"abyssal_terrors": ["curse_x"]}) is True
+
+
+def test_has_blocking_issues_false_when_clean():
+    import build_dataset
+    empty = {"unclaimed_trees": [], "unknown_weapon_kinds": [], "unmodeled_zones": []}
+    assert build_dataset._has_blocking_issues(empty, {}) is False
+
+
+def test_coverage_report_lines_summarizes():
+    import build_dataset
+    coverage = {"unclaimed_trees": ["abyssal"], "unknown_weapon_kinds": [], "unmodeled_zones": ["zone_4"]}
+    lines = build_dataset._coverage_report_lines(coverage, {"abyssal_terrors": ["curse_x", "curse_y"]})
+    text = "\n".join(lines)
+    assert "abyssal" in text
+    assert "zone_4" in text
+    assert "abyssal_terrors" in text
