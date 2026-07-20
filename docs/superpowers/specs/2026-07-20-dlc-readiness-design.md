@@ -77,13 +77,24 @@ tests all land. DLC day: teach one function the real signal.
 |------|-------|-----|
 | New weapon *kind* | only `{ranged, melee}` iterated | iterate whatever kinds exist under `weapons/`; warn on unrecognized |
 | New zones | `find_zone_waves` hardcodes `zone_1` | discover all `zones/zone_*`; still model only what's verified, but report the rest exist |
-| Whole new content tree (`abyssal/`, curse pickups…) | nothing globs it → invisible | top-level **coverage pass**: diff `extracted/` subdirs against what discoverers claim; report **unclaimed trees** |
-| Dirs failing filename conventions | silent `continue` | collect skipped dirs and report them |
+| Whole new content tree (`abyssal/`, curse pickups…) | nothing globs it → invisible | top-level **coverage pass**: diff `extracted/` subdirs against an accounted-for baseline; report **unclaimed trees** |
 
-**Light registry (the B borrow):** each discoverer declares the subtree(s) it
-claims; a coverage check reports unclaimed trees and per-discoverer skips. This
-is a *reporting* structure, not a generic entity-handler — the build handles
-what it knows and loudly enumerates what it doesn't.
+**Coverage pass (the B borrow):** a `coverage_report(extracted_root)` compares
+the actual `extracted/` layout against a baseline snapshot of Brotato 1.1.15.4
+and reports three bounded, zero-base-noise signals — new top-level content
+trees, new weapon kinds, and new zones. This is a *reporting* structure, not a
+generic entity-handler — the build handles what it knows and loudly enumerates
+what it doesn't.
+
+**Calibration note (from the real extraction):** `weapons/` already holds
+`melee, ranged, melee_sounds, shooting_behaviors, weapon_stats`, and `zones/`
+already holds `zone_1, zone_2, zone_3, backgrounds, common` (only `zone_1` is
+modeled). The baseline constants encode all of these so the base build reports
+clean and only genuinely new content surfaces. Within-directory
+convention-failure reporting (a skipped enemy/item dir that fails its filename
+convention) is **deferred** — DLC content will almost certainly follow existing
+conventions and be ingested, so that signal is low-value/high-noise relative to
+the three bounded ones above.
 
 ## Section 3 — Diff harness (`tools/diff_dataset.py`) — centerpiece
 
@@ -118,9 +129,13 @@ impact.
   deploy can't silently ship half-ingested DLC. Default is non-strict: the build
   still writes the json and prints the report as a warning.
 - New unknown effects flow through the **existing** `unmodeled_effects` /
-  `classified_effects` machinery (no new mechanism). When `content_sources`
-  includes a DLC with unmodeled effects, `read_me`'s primer caveats it — keeping
-  the "never present unverified as verified" contract intact.
+  `classified_effects` machinery (no new mechanism); the build aggregates them
+  via `aggregate_unmodeled_effects(ds)` and reports counts per source.
+- The `read_me` primer caveat for DLC-with-unmodeled-effects is written at
+  **incorporation time** (a playbook step), not now — so its wording is
+  authored against the *actual* unmodeled list rather than guessed against
+  content we can't yet see. This preserves the "never present unverified as
+  verified" contract without speculative copy.
 
 ## Section 5 — DLC-day playbook (`docs/dlc-incorporation-playbook.md`)
 
