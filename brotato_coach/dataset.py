@@ -4,7 +4,7 @@ import json
 
 from brotato_coach.builders.mechanics import STAT_MECHANICS
 
-DATASET_VERSION = 6  # was 5 (raw stat-aware weapon fields replace precomputed RD lines)
+DATASET_VERSION = 7  # was 6 (per-record `source` + root `content_sources`)
 
 # base_damage and cooldown are calculation-critical: the DPS engine reads them
 # unconditionally, so a weapon without them must fail the build, not a query.
@@ -15,10 +15,13 @@ _WEAPON_TYPES = ("melee", "ranged")
 def assemble_dataset(*, game_version: str, generated_at: str, weapons: list,
                      items: list, characters: list, sets: list,
                      enemies: list, zone_1_waves: list) -> dict:
+    all_records = [*weapons, *items, *characters, *sets, *enemies, *zone_1_waves]
+    content_sources = sorted({r["source"] for r in all_records if "source" in r}) or ["base"]
     return {
         "schema_version": DATASET_VERSION,
         "game_version": game_version,
         "generated_at": generated_at,
+        "content_sources": content_sources,
         "stat_mechanics": STAT_MECHANICS,
         "weapons": weapons,
         "items": items,
@@ -32,8 +35,8 @@ def assemble_dataset(*, game_version: str, generated_at: str, weapons: list,
 def validate_dataset(dataset: dict) -> list[str]:
     problems: list[str] = [
         f"missing top-level key: {key}"
-        for key in ("schema_version", "game_version", "weapons", "items", "characters", "sets",
-                    "enemies", "zone_1_waves")
+        for key in ("schema_version", "game_version", "content_sources", "weapons",
+                    "items", "characters", "sets", "enemies", "zone_1_waves")
         if key not in dataset
     ]
 
@@ -78,7 +81,27 @@ def validate_dataset(dataset: dict) -> list[str]:
                 problems.append(
                     f"wave {w.get('wave', '?')} references unknown enemy '{eid}'")
 
+    for coll_name in ("weapons", "items", "characters", "sets", "enemies", "zone_1_waves"):
+        for rec in dataset.get(coll_name, []):
+            if "source" not in rec:
+                rid = rec.get("id") or rec.get("name") or rec.get("wave", "<unknown>")
+                problems.append(f"{coll_name} record {rid} missing source")
+
     return problems
+
+
+def aggregate_unmodeled_effects(dataset: dict) -> dict[str, list[str]]:
+    """Map content source -> sorted unique unmodeled effect keys across all
+    records. Empty when every effect is modeled or classified (the base-game
+    state today). A DLC introducing new effect scripts populates it as the
+    modeling worklist, bucketed by origin."""
+    by_source: dict[str, set[str]] = {}
+    for coll in ("weapons", "items", "characters", "sets", "enemies"):
+        for rec in dataset.get(coll, []):
+            src = rec.get("source", "base")
+            for key in rec.get("unmodeled_effects", []) or []:
+                by_source.setdefault(src, set()).add(str(key))
+    return {src: sorted(keys) for src, keys in sorted(by_source.items())}
 
 
 def load_dataset(path: str) -> dict:

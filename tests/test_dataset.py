@@ -19,10 +19,11 @@ def test_assemble_and_validate_ok():
         "base_damage": 25, "cooldown": 45,
         "accuracy": 1.0, "crit_chance": 0.03, "crit_damage": 2.0, "piercing": 3,
         "nb_projectiles": 1, "scaling_stats": [], "can_have_negative_knockback": False,
-        "base_knockback": 0, "sets": [], "effects": [],
+        "base_knockback": 0, "sets": [], "effects": [], "source": "base",
     }
     item = {"id": "i", "name": "I", "tier": 0, "value": 10, "tags": [], "effects": [],
-            "archetype": [], "frozen_stat": None, "scaling_stats": [], "damage_tags": []}
+            "archetype": [], "frozen_stat": None, "scaling_stats": [], "damage_tags": [],
+            "source": "base"}
     ds = dataset.assemble_dataset(game_version="1.1.0.0", generated_at="2026-07-01T00:00:00Z",
                                   weapons=[weapon], items=[item], characters=[], sets=[],
                                   enemies=[], zone_1_waves=[])
@@ -61,8 +62,39 @@ def _minimal(**over):
     return dataset.assemble_dataset(**base)
 
 
-def test_schema_version_is_6():
-    assert _minimal()["schema_version"] == 6
+def test_schema_version_is_7():
+    assert _minimal()["schema_version"] == 7
+
+
+def test_content_sources_defaults_to_base_when_empty():
+    assert _minimal()["content_sources"] == ["base"]
+
+
+def test_content_sources_reflects_record_sources():
+    ds = _minimal(
+        weapons=[{"id": "w", "name": "W", "tier": 1, "weapon_type": "ranged",
+                  "base_damage": 5, "cooldown": 60, "source": "base"}],
+        items=[{"id": "i", "name": "I", "effects": [], "source": "abyssal_terrors"}])
+    assert ds["content_sources"] == ["abyssal_terrors", "base"]
+
+
+def test_validate_flags_missing_source():
+    ds = _minimal(enemies=[{"id": "baby_alien", "name": "Baby Alien"}])  # no source
+    problems = dataset.validate_dataset(ds)
+    assert any("source" in p for p in problems)
+
+
+def test_aggregate_unmodeled_effects_buckets_by_source():
+    ds = _minimal(
+        weapons=[{"id": "w", "name": "W", "tier": 1, "weapon_type": "ranged",
+                  "base_damage": 5, "cooldown": 60, "source": "abyssal_terrors",
+                  "unmodeled_effects": ["mystery_curse", "mystery_curse", "abyssal_x"]}])
+    agg = dataset.aggregate_unmodeled_effects(ds)
+    assert agg == {"abyssal_terrors": ["abyssal_x", "mystery_curse"]}
+
+
+def test_aggregate_unmodeled_effects_empty_when_all_modeled():
+    assert dataset.aggregate_unmodeled_effects(_minimal()) == {}
 
 
 def test_validate_flags_missing_weapon_type():
@@ -90,8 +122,8 @@ def test_validate_flags_unknown_weapon_type():
 
 
 def test_enemies_and_waves_present_in_output():
-    ds = _minimal(enemies=[{"id": "baby_alien", "name": "Baby Alien"}],
-                  zone_1_waves=[{"wave": 1, "groups": [{"enemy_id": "baby_alien"}]}])
+    ds = _minimal(enemies=[{"id": "baby_alien", "name": "Baby Alien", "source": "base"}],
+                  zone_1_waves=[{"wave": 1, "groups": [{"enemy_id": "baby_alien"}], "source": "base"}])
     assert ds["enemies"][0]["id"] == "baby_alien"
     assert ds["zone_1_waves"][0]["wave"] == 1
     assert dataset.validate_dataset(ds) == []
