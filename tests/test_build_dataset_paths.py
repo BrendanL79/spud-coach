@@ -61,3 +61,35 @@ def test_coverage_report_lines_summarizes():
     assert "abyssal" in text
     assert "zone_4" in text
     assert "abyssal_terrors" in text
+
+
+def test_strict_build_blocks_and_writes_nothing_on_unaccounted_tree(tmp_path):
+    import build_dataset
+    extracted = tmp_path / "extracted"
+    (extracted / "abyssal").mkdir(parents=True)  # unaccounted content tree -> blocking
+    out = tmp_path / "out" / "brotato.json"
+    rc = build_dataset.main([
+        "--extracted", str(extracted),
+        "--recovered", str(tmp_path / "recovered"),  # absent: no version file/translations
+        "--out", str(out),
+        "--game-version", "9.9.9.9",
+        "--strict",
+    ])
+    assert rc == 1
+    assert not out.exists()  # dataset must NOT be written when --strict blocks
+
+
+def test_strict_build_succeeds_and_writes_when_no_unaccounted_content(tmp_path):
+    import build_dataset
+    extracted = tmp_path / "extracted"
+    extracted.mkdir(parents=True)  # empty -> coverage clean, no unmodeled effects
+    out = tmp_path / "out" / "brotato.json"
+    rc = build_dataset.main([
+        "--extracted", str(extracted),
+        "--recovered", str(tmp_path / "recovered"),
+        "--out", str(out),
+        "--game-version", "9.9.9.9",
+        "--strict",
+    ])
+    assert rc == 0
+    assert out.exists()  # clean base under --strict still writes
