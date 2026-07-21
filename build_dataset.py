@@ -29,6 +29,7 @@ from brotato_coach.builders.waves import build_wave_record
 from brotato_coach.builders.localization import parse_translations_csv
 from brotato_coach.builders.version import parse_game_version
 from brotato_coach.builders.timestamps import format_generated_at
+from brotato_coach.builders.provenance import detect_source
 from brotato_coach.tres import parse_tres
 
 
@@ -50,6 +51,37 @@ def resolve_recovered_paths(recovered: str, version_file: str | None,
         translations or os.path.join(recovered, ".assets", "resources",
                                      "translations", "translations.csv"),
     )
+
+
+def _coverage_report_lines(coverage: dict, unmodeled_by_source: dict) -> list[str]:
+    lines: list[str] = []
+    for label, key in (("new content trees", "unclaimed_trees"),
+                       ("new weapon kinds", "unknown_weapon_kinds"),
+                       ("new/unmodeled zones", "unmodeled_zones")):
+        vals = coverage.get(key) or []
+        if vals:
+            lines.append(f"  {label}: {', '.join(vals)}")
+    for src, keys in (unmodeled_by_source or {}).items():
+        if keys:
+            shown = ", ".join(keys[:8]) + ("…" if len(keys) > 8 else "")
+            lines.append(f"  unmodeled effects [{src}]: {len(keys)} ({shown})")
+    return lines
+
+
+def _has_blocking_issues(coverage: dict, unmodeled_by_source: dict) -> bool:
+    if any(coverage.get(k) for k in
+           ("unclaimed_trees", "unknown_weapon_kinds", "unmodeled_zones")):
+        return True
+    return any(bool(v) for v in (unmodeled_by_source or {}).values())
+
+
+def _stamp_sources(*record_lists) -> None:
+    """Tag every built record with its content origin. Today detect_source
+    returns "base" for all; on DLC day it learns the real signal (see
+    provenance.py) and this stamps records without further plumbing changes."""
+    for records in record_lists:
+        for rec in records:
+            rec["source"] = detect_source(record=rec)
 
 
 def main(argv=None) -> int:
@@ -75,6 +107,10 @@ def main(argv=None) -> int:
         "--translations", default=None,
         help="decompiled Godot translations CSV; skipped if absent "
              "(default: <recovered>/.assets/resources/translations/translations.csv)")
+    parser.add_argument(
+        "--strict", action="store_true",
+        help="fail the build (exit 1, no write) if coverage finds new content "
+             "trees/weapon-kinds/zones or any unmodeled effect")
     args = parser.parse_args(argv)
     version_file, translations = resolve_recovered_paths(
         args.recovered, args.version_file, args.translations)
@@ -165,6 +201,8 @@ def main(argv=None) -> int:
     for e in enemies:
         e["appears_in"] = ["normal"] if e["id"] in enemy_ids_in_waves else []
 
+    _stamp_sources(weapons, items, characters, sets, enemies, zone_1_waves)
+
     ds = dataset.assemble_dataset(
         game_version=game_version, generated_at=generated_at,
         weapons=weapons, items=items, characters=characters, sets=sets,
@@ -176,6 +214,18 @@ def main(argv=None) -> int:
         for p in problems:
             print(f"  - {p}", file=sys.stderr)
         return 1
+
+    coverage = discover.coverage_report(args.extracted)
+    unmodeled = dataset.aggregate_unmodeled_effects(ds)
+    report_lines = _coverage_report_lines(coverage, unmodeled)
+    if report_lines:
+        print("Coverage / unmodeled-content report:", file=sys.stderr)
+        for line in report_lines:
+            print(line, file=sys.stderr)
+        if args.strict and _has_blocking_issues(coverage, unmodeled):
+            print("Build failed (--strict): un-triaged content above; "
+                  "triage or extend the baseline before shipping.", file=sys.stderr)
+            return 1
 
     out_dir = os.path.dirname(args.out)
     if out_dir:

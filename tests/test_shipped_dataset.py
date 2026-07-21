@@ -73,9 +73,9 @@ def test_shipped_dataset_is_complete():
     assert any(e["text"] for e in hc["effects"])  # effect text_keys resolved
     rg = query.get_character(ds, "Ranger")
     assert rg["display_name"] == "Ranger"
-    # schema_version 6 = stat-aware DPS engine (weapon_type/recoil_duration/
-    # max_range/scaling_stats replace the old RD-slope proc model)
-    assert ds["schema_version"] == 6
+    # schema_version 7 = DLC-readiness provenance (per-record `source` + root
+    # `content_sources`) atop the schema-6 stat-aware DPS engine
+    assert ds["schema_version"] == 7
 
 
 @pytest.mark.skipif(not os.path.exists(DATA), reason="dataset not built")

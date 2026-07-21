@@ -346,6 +346,54 @@ def test_find_enemy_dirs_accepts_bare_stats_tres(tmp_path):
     assert found[0]["stats_path"].endswith("evil_mob.tres")
 
 
+def test_coverage_report_empty_on_baseline_dirs(tmp_path):
+    from brotato_coach.builders.discover import coverage_report
+    # Only accounted-for baseline dirs present.
+    for name in ("weapons", "items", "entities", "zones", "challenges", "ui", "effects"):
+        (tmp_path / name).mkdir()
+    (tmp_path / "weapons" / "melee").mkdir()
+    (tmp_path / "weapons" / "ranged").mkdir()
+    (tmp_path / "weapons" / "weapon_stats").mkdir()
+    (tmp_path / "zones" / "zone_1").mkdir()
+    (tmp_path / "zones" / "zone_2").mkdir()
+    (tmp_path / "zones" / "common").mkdir()
+    report = coverage_report(str(tmp_path))
+    assert report == {"unclaimed_trees": [], "unknown_weapon_kinds": [], "unmodeled_zones": []}
+
+
+def test_coverage_report_flags_new_content(tmp_path):
+    from brotato_coach.builders.discover import coverage_report
+    (tmp_path / "abyssal").mkdir()                       # new top-level tree
+    (tmp_path / "weapons").mkdir()
+    (tmp_path / "weapons" / "thrown").mkdir()            # new weapon kind
+    (tmp_path / "zones").mkdir()
+    (tmp_path / "zones" / "zone_4").mkdir()              # new zone
+    report = coverage_report(str(tmp_path))
+    assert report["unclaimed_trees"] == ["abyssal"]
+    assert report["unknown_weapon_kinds"] == ["thrown"]
+    assert report["unmodeled_zones"] == ["zone_4"]
+
+
+def test_coverage_report_ignores_dot_dirs(tmp_path):
+    from brotato_coach.builders.discover import coverage_report
+    # Only accounted-for baseline dirs present, plus Godot/tooling cache dirs
+    # (dot-prefixed) at every level coverage_report scans. These are never
+    # Brotato content and must not surface as unclaimed/unknown/unmodeled.
+    for name in ("weapons", "items", "entities", "zones", "challenges", "ui", "effects"):
+        (tmp_path / name).mkdir()
+    (tmp_path / ".import").mkdir()
+    (tmp_path / "weapons" / "melee").mkdir()
+    (tmp_path / "weapons" / "ranged").mkdir()
+    (tmp_path / "weapons" / "weapon_stats").mkdir()
+    (tmp_path / "weapons" / ".import").mkdir()
+    (tmp_path / "zones" / "zone_1").mkdir()
+    (tmp_path / "zones" / "zone_2").mkdir()
+    (tmp_path / "zones" / "common").mkdir()
+    (tmp_path / "zones" / ".godot").mkdir()
+    report = coverage_report(str(tmp_path))
+    assert report == {"unclaimed_trees": [], "unknown_weapon_kinds": [], "unmodeled_zones": []}
+
+
 def test_find_zone_waves_excludes_test_wave(tmp_path):
     from brotato_coach.builders import discover
 

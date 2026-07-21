@@ -13,6 +13,59 @@ CHARACTER_ID_PREFIX = "character_"
 WEAPON_ID_PREFIX = "weapon_"
 ITEM_ID_PREFIX = "item_"
 
+# Baseline snapshot of Brotato 1.1.15.4's extracted/ layout (verified against
+# the current extraction). coverage_report() flags anything NOT in these sets —
+# empty on the base game, non-empty when a game/DLC update adds a new content
+# tree, weapon kind, or zone. Extend a set only when its new content has been
+# triaged into the build.
+_ACCOUNTED_TOP_LEVEL = frozenset({
+    "addons", "challenges", "effect_behaviors", "effects", "entities", "global",
+    "items", "overlap", "particles", "projectiles", "resources", "singletons",
+    "tools", "ui", "visual_effects", "weapons", "zones",
+})
+_ACCOUNTED_WEAPON_SUBDIRS = frozenset({
+    "melee", "ranged", "melee_sounds", "shooting_behaviors", "weapon_stats",
+})
+# zone_1 (ZONE_CRASH_ZONE, unlocked_by_default=true, ~336 .tres) is the modeled
+# base zone. zone_2 (ZONE_LAKE) and zone_3 (ZONE_VOLCANIC_GROUNDS) ship in the
+# base 1.1.15.4 PCK as inert stubs — 5 .tres each, unlocked_by_default=false, a
+# single placeholder wave — i.e. pre-staged Abyssal Terrors DLC zones, disabled.
+# They are accounted for so the base build stays clean; installing the DLC fills
+# them in (a modeling task, not a coverage drop). backgrounds/common are non-wave
+# assets. Only a genuinely NEW zone dir surfaces here.
+_ACCOUNTED_ZONE_SUBDIRS = frozenset({
+    "zone_1", "zone_2", "zone_3", "backgrounds", "common",
+})
+
+
+def _immediate_subdirs(path: str) -> set[str]:
+    if not os.path.isdir(path):
+        return set()
+    # Dot-prefixed dirs (Godot's `.import` cache, `.godot`, etc.) are tooling
+    # artifacts, never Brotato content, in any of the three trees this scans.
+    return {n for n in os.listdir(path)
+            if not n.startswith(".") and os.path.isdir(os.path.join(path, n))}
+
+
+def coverage_report(extracted_root: str) -> dict[str, list[str]]:
+    """New content trees / weapon kinds / zones not in the 1.1.15.4 baseline.
+
+    Empty on the base game. A DLC (or major patch) that introduces a new
+    top-level content tree, a new weapon kind, or a new zone surfaces it here so
+    the build can report — and, under --strict, refuse to ship — un-triaged
+    content instead of silently dropping it.
+    """
+    return {
+        "unclaimed_trees": sorted(
+            _immediate_subdirs(extracted_root) - _ACCOUNTED_TOP_LEVEL),
+        "unknown_weapon_kinds": sorted(
+            _immediate_subdirs(os.path.join(extracted_root, "weapons"))
+            - _ACCOUNTED_WEAPON_SUBDIRS),
+        "unmodeled_zones": sorted(
+            _immediate_subdirs(os.path.join(extracted_root, "zones"))
+            - _ACCOUNTED_ZONE_SUBDIRS),
+    }
+
 
 def _res_url_to_path(extracted_root: str, res_url: str | None) -> str | None:
     if res_url and res_url.startswith("res://"):
