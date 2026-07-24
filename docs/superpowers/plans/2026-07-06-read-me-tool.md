@@ -20,7 +20,7 @@ the coach already claims (`runfile.py:12`), bumping `DATASET_VERSION` to 3.
 
 ## Global Constraints
 
-- Work ONLY in the worktree `C:\Users\brend\src\brotato-exam\.claude\worktrees\read-me-tool`
+- Work ONLY in the worktree `C:\Users\brend\src\spud-coach\.claude\worktrees\read-me-tool`
   (branch `worktree-read-me-tool`). Before your first commit, run
   `git rev-parse --show-toplevel` and verify it prints exactly that path;
   if it does not, STOP and report NEEDS_CONTEXT — do not commit anywhere else.
@@ -184,8 +184,8 @@ of its own; point the builder at the main checkout's copies:
 Run:
 ```bash
 uv run python build_dataset.py \
-  --extracted /c/Users/brend/src/brotato-exam/extracted \
-  --recovered /c/Users/brend/src/brotato-exam/recovered
+  --extracted /c/Users/brend/src/spud-coach/extracted \
+  --recovered /c/Users/brend/src/spud-coach/recovered
 ```
 
 Expected: exits 0, writes `data/brotato.json` (gitignored — verify

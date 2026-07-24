@@ -13,7 +13,7 @@
 - Work on branch `feature/stat-aware-dps-engine`; large multi-commit feature → **merge commit** at the end (project convention).
 - TDD: failing test first, then minimal implementation, for every task. `uv run pytest` and `uv run ruff check .` must be green at every commit.
 - NEVER commit or redistribute `data/brotato.json`, `extracted/`, `recovered/`, `game_files/` (all gitignored).
-- Worktree caveat: `extracted/`, `recovered/`, and `data/` are gitignored and ABSENT in a worktree. Tasks 7 and 14 (dataset rebuild, shipped-dataset tests) must either run in the main checkout (`C:\Users\brend\src\brotato-exam`) or pass `--extracted`/`--recovered` pointing at it and copy the rebuilt `data/brotato.json` into the worktree's `data/`.
+- Worktree caveat: `extracted/`, `recovered/`, and `data/` are gitignored and ABSENT in a worktree. Tasks 7 and 14 (dataset rebuild, shipped-dataset tests) must either run in the main checkout (`C:\Users\brend\src\spud-coach`) or pass `--extracted`/`--recovered` pointing at it and copy the rebuilt `data/brotato.json` into the worktree's `data/`.
 - Evidence citations in code/docs must be re-verified against `recovered/` at write time (project rule). Citations in this plan were pinned 2026-07-13; re-check the quoted lines still match before writing them into docs.
 - GDScript arithmetic notes used throughout: `round()` = half away from zero (NOT Python's banker's rounding); `as int` = truncate toward zero. Weapon `cooldown` is in frames @60fps.
 - The in-game constant `MIN_COOLDOWN = 2` frames (`recovered/singletons/weapon_service.gd:5`).

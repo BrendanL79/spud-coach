@@ -15,20 +15,20 @@ NOTHING else. A later, serial phase turns dossiers into specs and code.
 A previous session had subagents edit the wrong checkout. Before writing anything:
 
 1. Run `git rev-parse --show-toplevel` from your working directory.
-2. It MUST be `C:/Users/brend/src/brotato-exam/.claude/worktrees/remaining-weapon-procs`
+2. It MUST be `C:/Users/brend/src/spud-coach/.claude/worktrees/remaining-weapon-procs`
    (any slash style). If it is anything else, STOP immediately and return only
    the text `NEEDS_CONTEXT: wrong checkout <what you saw>`.
 
 ## Where things live
 
 - **This worktree** (the ONLY place you may write, and only your one dossier file):
-  `C:\Users\brend\src\brotato-exam\.claude\worktrees\remaining-weapon-procs\`
+  `C:\Users\brend\src\spud-coach\.claude\worktrees\remaining-weapon-procs\`
 - **Game data (read-only, in the MAIN checkout — never write/edit/commit there):**
-  - Decompiled code: `C:\Users\brend\src\brotato-exam\recovered\` — key files:
+  - Decompiled code: `C:\Users\brend\src\spud-coach\recovered\` — key files:
     `weapons/weapon.gd`, `singletons/weapon_service.gd`, `singletons/run_data.gd`,
     `entities/units/unit/unit.gd`, `entities/units/player/player.gd`,
     `effects/` and `effects/weapons/` (effect scripts), `projectiles/`.
-  - Extracted data: `C:\Users\brend\src\brotato-exam\extracted\weapons\{melee,ranged}\<weapon>\<tier>\`
+  - Extracted data: `C:\Users\brend\src\spud-coach\extracted\weapons\{melee,ranged}\<weapon>\<tier>\`
     (`*_stats.tres`, `*_data.tres` with its `effects` array, `*_effect*.tres`).
     Some tier-1/untiered files sit at the weapon root instead of a tier dir.
 - **Template for evidence quality** (read it — your dossier mirrors its Evidence section):

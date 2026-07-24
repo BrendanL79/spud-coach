@@ -32,7 +32,7 @@ dps                 = expected_hit_damage * accuracy / cycle_time, plus proc lin
 ```
 
 Every step below cites the decompiled source it was re-verified against in
-`C:/Users/brend/src/brotato-exam/recovered/` at the time this document was
+`C:/Users/brend/src/spud-coach/recovered/` at the time this document was
 written (this worktree does not ship `recovered/`).
 
 ## A. Flat scaling
