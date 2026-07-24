@@ -14,6 +14,14 @@ Two deliverables live here:
   current UTC time. Pass either explicitly to override (e.g. a pinned/reproducible build).
 - Run the MCP server: `uv run python -m brotato_coach.server` (cwd must be the repo root).
 
+## Releases & deployment
+- **Site (spudcoach.fyi)**: Netlify auto-deploys the `site/` directory on every push to main
+  (root `netlify.toml`). No GitHub Action involved — pushing to main IS the site deploy.
+- **PyPI + MCP registry**: `.github/workflows/publish.yml` runs only on published GitHub
+  releases (`vX.Y.Z` tags) — tests, build, PyPI publish, then MCP registry via `server.json`.
+- **Naming**: the MCP server / PyPI distribution / console script are `spudcoach`; the import
+  package stays `brotato_coach`. The repo dir is `spud-coach`.
+
 ## CRITICAL: never commit or redistribute the dataset
 `data/brotato.json` is derived from Brotato's copyrighted game files. It is **gitignored and was
 purged from git history**; the public repo ships zero game data. Do NOT re-add or commit it —
