@@ -37,7 +37,7 @@ precomputed number.
 
 
 def build_server(ds: dict) -> FastMCP:
-    mcp = FastMCP("brotato-coach", instructions=_INSTRUCTIONS)
+    mcp = FastMCP("spudcoach", instructions=_INSTRUCTIONS)
 
     @mcp.tool()
     def read_me() -> dict[str, Any]:

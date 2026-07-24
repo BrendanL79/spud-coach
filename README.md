@@ -63,7 +63,7 @@ The MCP server is described by [`plugin/.mcp.json`](plugin/.mcp.json):
 ```json
 {
   "mcpServers": {
-    "brotato-coach": {
+    "spudcoach": {
       "command": "uv",
       "args": ["run", "python", "-m", "brotato_coach.server"],
       "cwd": "${CLAUDE_PLUGIN_ROOT}"
@@ -81,7 +81,7 @@ To register it directly in Claude Code without packaging, add the server pointed
 e.g.:
 
 ```bash
-claude mcp add brotato-coach -- uv run --directory /path/to/spud-coach python -m brotato_coach.server
+claude mcp add spudcoach -- uv run --directory /path/to/spud-coach python -m brotato_coach.server
 ```
 
 Once connected, just ask in natural language — the model routes your question to the tools below:
